@@ -67,3 +67,44 @@ source .venv/bin/activate
 # windows
 .venv\Scripts\activate
 ```
+
+
+## Branching & Commit Rules
+
+### Branch Naming
+
+
+| Type        | When to use                                      | Example                          |
+|-------------|--------------------------------------------------|----------------------------------|
+| `feat-`     | New feature or experiment                        | `feat-omniparser-eval`           |
+| `fix-`      | Bug fix                                          | `fix-bbox-offset-error`          |
+| `data-`     | Data processing or dataset changes               | `data-osworld-preprocessing`     |
+| `exp-`      | Exploratory / throwaway experiment               | `exp-attention-viz`              |
+| `docs-`     | Documentation or research notes only             | `docs-literature-review`         |
+| `refactor-` | Code restructure, no behavior change             | `refactor-pipeline-cleanup`      |
+
+- `master` is the stable, always-runnable branch. Never commit broken code directly to `master`.
+- Merge to `master` only after stable delivery. 
+- Merge to `dev` when the experiment or feature is complete and reproducible.
+
+### Commit Message Format
+
+```
+<type>(<scope>): <short imperative summary>
+
+[optional body — what and why, not how]
+[optional: Refs: <paper>, <issue>]
+```
+
+Types: `feat`, `fix`, `data`, `exp`, `docs`, `refactor`, `test`, `chore`
+
+Examples:
+```
+feat(eval): add step-success-rate metric for OSWorld
+
+data(osworld): filter tasks with missing screenshots
+
+exp(omniparser): compare bbox precision at 0.5 vs 0.7 threshold
+
+docs(proposal): fix spelling in problem definition
+```
