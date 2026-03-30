@@ -4,6 +4,11 @@ Evaluating Autonomous Agents for GUI Interaction
 
 SAM Prompt Analysis &amp; Robustness Evaluation
 
+> [!IMPORTANT]
+> AI Transparency  
+> every file, line using AI will be mentioned  
+> you can look on CLAUDE.md and GEMINI.md to see strict rules for AI transparency
+
 ## Folder Structure
 ```text
 Click2Act/
