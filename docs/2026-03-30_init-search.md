@@ -34,7 +34,7 @@
 - **Analysis** (may benfit us)
   <img src="assets/osworld-analysis.png">
 
-### **MMBench-GUI** Kinda Start of actual work: (2025-07-24)
+### **MMBench-GUI** Kinda Start of actual work at: (2025-07-24)
 - github link: https://github.com/open-compass/MMBench-GUI
 - techincal report paper: https://arxiv.org/pdf/2507.19478
 - hf dataset: https://huggingface.co/datasets/OpenGVLab/MMBench-GUI
@@ -53,7 +53,16 @@
 - **Results** for L3 only  -- the github repo contains rest
     <img src="assets/mmbench-l3-results.png">
 
-### **Mind2Web**
+### **Mind2Web** (DATASET NOT BENCHMARK) last updated 2 years ago (1k star)
+- github repo: https://github.com/OSU-NLP-Group/Mind2Web?tab=readme-ov-file
+- hf training data: https://huggingface.co/datasets/osunlp/Mind2Web
+- paper: https://arxiv.org/pdf/2306.06070
+- they have their own model "Mind2Act" 🤕 -- not a good sign
+-  contains 2,350 tasks spanning 137 websites
+- they are serving 3 tasks
+  1. Cross Task Generalization: Generalization across tasks in the same environment
+  2. Cross Website Generalization: Generalization across websites under the same domain
+  3. Cross Domain Generalization: Generalization across tasks and environments
 
 ### **Online-Mind2Web** (2025-11-3)
 - github link: https://github.com/OSU-NLP-Group/Online-Mind2Web
@@ -66,3 +75,10 @@ Agents*): (https://arxiv.org/pdf/2504.01382)
   - but nice it is fist time to **Navigator** model - heil china 
   <img src="assets/online-mind2web-results.png">
 
+### **ScreenSpot-Pro** GUI Grounding Benchmark (Feb 21, 2025)
+- github link: https://github.com/likaixin2000/ScreenSpot-Pro-GUI-Grounding
+- leaderboard: https://gui-agent.github.io/grounding-leaderboard/
+- blog: https://huggingface.co/blog/Ziyang/screenspot-pro
+- span: Windows, Mac, Linux, Photoshop, VScode, Office programs, etc...
+<img src="assets/screenspot-pro-leaderboard1.png">
+<img src="assets/screenspot-pro-leaderboard2.png">
