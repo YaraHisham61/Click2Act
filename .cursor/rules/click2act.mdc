@@ -1,17 +1,14 @@
-# CLAUDE.md — Instructions for Claude Code in Click2Act
-
-This file governs how Claude Code must behave in this research project.
-It is authoritative. Follow every rule here without exception.
-
+---
+alwaysApply: true
 ---
 
 ## 1. AI Transparency (Non-Negotiable)
 
-Every file Claude **creates** must begin with a header block:
+Every file Cursor **creates** must begin with a header block:
 
 ```
 <!-- AI-GENERATED
-     Model   : Claude Sonnet 4.6
+     Model   : Cursor Sonnet 4.6
      Date    : YYYY-MM-DD
      Prompt  : <exact prompt or summary that triggered creation of this file>
 -->
@@ -21,7 +18,7 @@ For **Python / scripts**, use the equivalent comment block:
 
 ```python
 # AI-GENERATED
-# Model  : Claude Sonnet 4.6
+# Model  : Cursor Sonnet 4.6
 # Date   : YYYY-MM-DD
 # Prompt : <exact prompt or summary>
 ```
@@ -32,7 +29,7 @@ Never omit this header. If a file grows from an earlier AI-generated file, keep 
 
 ## 2. Inline Refinement Tracking
 
-When Claude edits an **existing** line (spelling, logic, wording, structure), mark the change inline so the diff is human-readable inside the file itself:
+When Cursor edits an **existing** line (spelling, logic, wording, structure), mark the change inline so the diff is human-readable inside the file itself:
 
 **Markdown / text files:**
 ```
@@ -57,19 +54,19 @@ Rules:
 
 ## 3. Research & Markdown Files Location
 
-All Claude-authored or Claude-assisted markdown files (notes, summaries, literature reviews, experiment logs, analyses) **must** live under:
+All Cursor-authored or Cursor-assisted markdown files (notes, summaries, literature reviews, experiment logs, analyses) **must** live under:
 
 ```
-docs/claude/
+docs/cursor/
 ```
 
 Naming convention: `YYYY-MM-DD_<short-slug>.md`
-Example: `docs/claude/2026-03-30_omniparser-summary.md`
+Example: `docs/cursor/2026-03-30_omniparser-summary.md`
 
 Every such file must include the full prompt at the top inside the AI-GENERATED header.
 
 The folder `docs/` is for **human-authored** documentation.
-The folder `docs/claude/` is for **AI-assisted** research notes.
+The folder `docs/cursor/` is for **AI-assisted** research notes.
 Do not mix them.
 
 ---
@@ -110,7 +107,7 @@ This palette is colorblind-safe under deuteranopia simulation.
 
 ## 5. Folder Structure Guardian
 
-The canonical folder structure for this project is defined in `README.md`. Claude must:
+The canonical folder structure for this project is defined in `README.md`. Cursor must:
 
 1. **Warn immediately** if a file is being created outside its correct folder.
 2. **State the correct path** alongside the warning.
@@ -134,7 +131,7 @@ The canonical folder structure for this project is defined in `README.md`. Claud
 | Jupyter notebooks (EDA)       | `notebooks/`                   |
 | Experiment outputs / runs     | `experiments/<date>_<name>/`   |
 | Human-authored docs           | `docs/`                        |
-| Claude-assisted research docs | `docs/claude/`                 |
+| Cursor-assisted research docs | `docs/cursor/`                 |
 | Papers and references         | `references/`                  |
 | Unit tests                    | `tests/`                       |
 
@@ -153,19 +150,19 @@ Warning format to use:
 
 When asked to fix spelling, grammar, or markdown structure:
 
-### What Claude MUST do
+### What Cursor MUST do
 - Fix spelling errors.
 - Fix grammar errors (subject-verb agreement, punctuation, article usage).
 - Fix markdown structure: heading levels, table alignment, numbered lists, code block fences.
 - Keep every word the user wrote.
 
-### What Claude MUST NOT do
+### What Cursor MUST NOT do
 - Rephrase sentences.
 - Replace words with "better" synonyms.
 - Add or remove content.
 - Change the user's tone, register, or style.
 
-### After every edit, Claude MUST append a "Word Suggestions" block
+### After every edit, Cursor MUST append a "Word Suggestions" block
 
 Place this block at the **end of the response** (never inside the file):
 
@@ -177,7 +174,7 @@ Place this block at the **end of the response** (never inside the file):
 | §2, line 4 | "compare" | "benchmark" | more precise in evaluation context |
 ```
 
-The user decides whether to accept any suggestion. Claude never applies suggestions automatically.
+The user decides whether to accept any suggestion. Cursor never applies suggestions automatically.
 
 ### The command to invoke this mode
 
@@ -233,29 +230,29 @@ Rules:
 - Subject line ≤ 50 characters, imperative mood ("add", not "added").
 - No period at the end of the subject line.
 - Body explains *why*, not *what* — the diff shows *what*.
-- Claude must propose a commit message whenever it makes a meaningful change, but never commit without explicit user approval.
+- Cursor must propose a commit message whenever it makes a meaningful change, but never commit without explicit user approval.
 
 ---
 
 ## 9. AI-Generated Docs Are Off-Limits as Context
 
-**Never read, reference, or treat as authoritative any file inside `docs/claude/` or `docs/gemini/`.**
+**Never read, reference, or treat as authoritative any file inside `docs/cursor/` or `docs/gemini/`.**
 
 These folders contain AI-generated research notes that may be noisy, outdated, or factually wrong.
-Claude must derive context exclusively from:
+Cursor must derive context exclusively from:
 - Source code (`src/`, `scripts/`, `configs/`)
-- Human-authored docs (`docs/` — excluding subfolders `docs/claude/` and `docs/gemini/`)
+- Human-authored docs (`docs/` — excluding subfolders `docs/cursor/` and `docs/gemini/`)
 - Papers in `references/`
 - Git history
 - The current conversation
 
-If the user explicitly pastes content from `docs/claude/` into the chat, Claude may use it — but must not proactively read those files.
+If the user explicitly pastes content from `docs/cursor/` into the chat, Cursor may use it — but must not proactively read those files.
 
 ---
 
 ## 7. General Research Project Behaviors
 
 - **Cite sources**: whenever referencing a paper, use `[Author et al., Year]` format and link to the PDF in `references/` if available.
-- **No speculation without flagging**: if Claude is uncertain, prefix the statement with `> [Uncertain]`.
+- **No speculation without flagging**: if Cursor is uncertain, prefix the statement with `> [Uncertain]`.
 - **Short responses by default**: research context means dense, precise output — no filler.
 - **Reproducibility**: every script must be runnable end-to-end with `uv run python -m scripts.<name>`.

@@ -4,11 +4,6 @@ Evaluating Autonomous Agents for GUI Interaction
 
 SAM Prompt Analysis &amp; Robustness Evaluation
 
-> [!IMPORTANT]
-> AI Transparency  
-> every file, line using AI will be mentioned  
-> you can look on CLAUDE.md and GEMINI.md to see strict rules for AI transparency
-
 ## Folder Structure
 ```text
 Click2Act/
@@ -113,3 +108,44 @@ exp(omniparser): compare bbox precision at 0.5 vs 0.7 threshold
 
 docs(proposal): fix spelling in problem definition
 ```
+
+---
+
+## AI Usage Disclaimer
+
+> [!IMPORTANT]
+> **AI Transparency**: every file, line using AI will be mentioned, you can look on CLAUDE.md and GEMINI.md to see strict rules for AI transparency
+
+This project uses AI assistants (claude and gemini) under strict transparency and containment rules.
+
+### Transparency
+
+Every file or line produced or modified by an AI is marked with header:
+
+```
+<!-- AI-GENERATED
+     Model   : <model name>
+     Date    : YYYY-MM-DD
+     Prompt  : <prompt summary>
+-->
+```
+
+Every inline edit is tracked with a `REFINED` comment directly above the changed line. 
+
+
+> See `CLAUDE.md` and `GEMINI.md` for the full rules.
+
+### AI-generated files location
+
+| Tool   | Output folder   |
+|--------|-----------------|
+| claude | `docs/claude/`  |
+| gemini | `docs/gemini/`  |
+
+`docs/` (root) is reserved for human-authored documentation only.
+
+### Context isolation
+
+AI tools are prohibited from reading their own generated output (`docs/claude/`, `docs/gemini/`). 
+
+These folders will contain noisy, outdated, and incorrect notes. Also recent research shows that AI reading its own rules or notes decrease its productivity and efficeny. 
