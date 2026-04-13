@@ -7,6 +7,8 @@ SAM Prompt Analysis &amp; Robustness Evaluation
 ## Folder Structure
 ```text
 Click2Act/
+├── imgs/                   # Images or Samples to test on
+├── models/                 # Weights of Models
 ├── data/                   # Data is kept separate from code
 │   ├── raw/                # Immutable original datasets
 │   ├── processed/          # Preprocessed data (e.g., resized, normalized)
