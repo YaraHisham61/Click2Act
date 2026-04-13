@@ -58,4 +58,19 @@ git clone https://github.com/microsoft/omniparser
 cd OmniParser
 
 pip install -r requirements.txt
+
+# paddleocr 3.x dropped legacy parameters used by OmniParser; pin to 2.x
+pip install "paddleocr==2.8.0" "paddlepaddle==2.6.2" "google" "google-genai"
+```
+
+### Fix: `ImportError: cannot import name 'Sentinel' from 'typing_extensions'`
+
+This error occurs when using `google-genai` or `pydantic-core` because conda installs
+`typing_extensions` 4.11.0 and leaves its `.py` file on disk. `pip install --upgrade`
+only updates the dist-info metadata without overwriting the stale conda-placed file,
+so the running code is still 4.11.0 (which has no public `Sentinel`).
+
+Fix with a force-reinstall:
+```bash
+pip install --force-reinstall "typing_extensions==4.15.0"
 ```
