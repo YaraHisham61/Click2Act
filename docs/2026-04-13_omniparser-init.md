@@ -23,3 +23,22 @@ the paper focuses on parsing ui screenshot, not agentic focus on achieving task.
 * worried about merging algorithm
 * the cropping of icons wasn't keep ratio and resize it 64x64
 * the cropping of icons \& resizing is better when I resize large side to 128
+
+## Failures (from [paper](../references/solution-OmniParser.pdf))
+1. Repeated Icons/Texts
+
+    like alarams page
+
+    <img src="./assets/omniparser-alarm-results.png" height="512">
+
+2. Corase Prediction of Bounding Boxes
+
+    the center of text bounding box is not clickable - the right word `more` is clickable
+    
+    <img src="./assets/omniparser-text-problem-results.png" height="512">
+
+3. Icon Misinterpretation 
+
+    because the lack of context given and rely only on the cropped and resized icon shape
+
+    > author suggested to train icon caption model that take full context (full screenshot)
