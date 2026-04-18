@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
@@ -132,4 +132,57 @@ def visualize_boxes(image_np, boxes, confidences=None, labels=None,
         plt.show()
 
 
-    
+def draw_click(image, x: int, y: int, radius: int = 20, opacity: float = 0.6,
+               color: str = None, figsize: tuple = (12, 7), ax=None):
+    """Overlay a semi-transparent circle on an image to mark a click point.
+
+    Args:
+        image   : PIL.Image or numpy array (H, W, 3).
+        x, y    : pixel coordinates of the circle centre.
+        radius  : circle radius in pixels.
+        opacity : alpha in [0, 1] — 0 = invisible, 1 = fully opaque.
+        color   : hex colour string (default: C2A_PALETTE["warning"]).
+        figsize : matplotlib figure size (used only when ax is None).
+        ax      : existing Axes to draw on, or None for a standalone figure.
+    """
+    if color is None:
+        color = C2A_PALETTE["warning"]
+
+    # --- normalise to PIL RGB ---
+    if isinstance(image, np.ndarray):
+        pil_img = Image.fromarray(image.astype(np.uint8)).convert("RGB")
+    else:
+        pil_img = image.convert("RGB")
+
+    # --- parse hex colour to RGB tuple ---
+    hex_color = color.lstrip("#")
+    rgb = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+    # --- draw circle on a transparent overlay ---
+    overlay = Image.new("RGBA", pil_img.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+    alpha = int(opacity * 255)
+    bbox = [x - radius, y - radius, x + radius, y + radius]
+    draw.ellipse(bbox, fill=(*rgb, alpha), outline=(*rgb, 255), width=2)
+
+    # --- composite onto the original ---
+    result = Image.alpha_composite(pil_img.convert("RGBA"), overlay).convert("RGB")
+    result_np = np.array(result)
+
+    # --- render ---
+    standalone = ax is None
+    if standalone:
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
+        fig.patch.set_facecolor(C2A_PALETTE["bg"])
+
+    ax.set_facecolor(C2A_PALETTE["bg"])
+    ax.imshow(result_np)
+    ax.plot(x, y, "+", color=C2A_PALETTE["text"], markersize=8, markeredgewidth=1.2)
+    ax.set_title(f"click @ ({x}, {y})", color=C2A_PALETTE["text"], fontsize=11)
+    ax.axis("off")
+
+    if standalone:
+        plt.tight_layout()
+        plt.show()
+
+    return result_np
