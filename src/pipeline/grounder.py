@@ -38,7 +38,7 @@ def main(config: dict):
             write_header = False
 
     logger.debug("Load All Images at once")
-    all_samples = [benchmark.get_sample(i) for i in range(start_idx, benchmark.size)]
+    all_samples = [benchmark.get_sample(i) for i in tqdm(range(start_idx, benchmark.size))]
     logger.debug(f"Start generating with batchs {batch_size}")
     
     for batch_start in tqdm(range(start_idx, benchmark.size, batch_size), desc='batches'):
