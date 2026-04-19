@@ -30,7 +30,7 @@ class GUIAgent(ABC):
         raise NotImplementedError()
     
     # Template method hooks — override in subclasses when needed                                                                                                                
-    def preprocess(self, screenshot: Image.Image) -> Image.Image:                                                                                                       
+    def preprocess(self, screenshot: Image) -> Image:                                                                                                       
         return screenshot                                                                                                                                                       
                                                                                                                                                                                 
     def postprocess(self, raw_output: any) -> AgentOutput:                                                                                                                      
