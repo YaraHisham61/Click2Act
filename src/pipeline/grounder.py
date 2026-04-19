@@ -31,8 +31,9 @@ def main(config: dict):
     write_header = True
     if output_csv.exists():
         done = pd.read_csv(output_csv)
+        done = done[done['idx'] != 'idx']  # drop duplicate header rows
         if not done.empty:
-            start_idx = int(done['idx'].max()) + 1
+            start_idx = int(done['idx'].astype(int).max()) + 1
             write_header = False
 
     for batch_start in tqdm(range(start_idx, benchmark.size, batch_size), desc='batches'):
