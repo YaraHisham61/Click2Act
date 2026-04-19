@@ -10,7 +10,7 @@ from huggingface_hub import snapshot_download
 
 class ScreenSpotProBenchmark(Benchmark):
     def __init__(self, config: dict[str, any]) -> None:
-        super.__init__(config)
+        super().__init__(config)
         self.config.setdefault("benchmark_path", str(DATA_PATH / "raw" / "screenspot_pro"))
         self.config.setdefault("repo_id", "likaixin/ScreenSpot-Pro")
         
