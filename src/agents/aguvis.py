@@ -74,16 +74,16 @@ class AGUVISAgent(GUIAgent):
         if 'pyautogui.click' in raw_output:
             match = re.search(r'x=([\d.]+),\s*y=([\d.]+)', raw_output)
             # NOTE: aguvis already output x,y as normalized so we don't need to do it
-            x, y = float(match.group(1)), float(match.group(2))  
-            
-            return AgentOutput(
-                coordinate=(x,y),
-                action_type="click",
-                raw = {"content": raw_output}
-            )
-        else:
-            logger.error(f"AGUVIS: This action not handled to be parsed yet: raw_output={raw_output}")
-            return AgentOutput()
+            if match:
+                x, y = float(match.group(1)), float(match.group(2))  
+                return AgentOutput(
+                    coordinate=(x,y),
+                    action_type="click",
+                    raw = {"content": raw_output}
+                )
+        
+        logger.error(f"AGUVIS: This action not handled to be parsed yet: raw_output={raw_output}")
+        return AgentOutput(raw = {"content": raw_output})
     
     def _get_model_inputs(self, screenshot: Image, task: str, history: str = "None"):
         messages = self._get_chat_messages(screenshot, task, history)
