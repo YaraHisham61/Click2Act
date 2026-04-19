@@ -39,6 +39,25 @@ class AGUVISAgent(GUIAgent):
         self.processor = Qwen2VLProcessor.from_pretrained(self.model_path)
         self.tokenizer = self.processor.tokenizer
     
+    def predict_click_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
+        texts, all_images = [], []
+        for screenshot, task in inputs:
+            messages = self._get_chat_messages(screenshot, task)
+            text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=False, chat_template=chat_template)
+            text += "<|im_start|>assistant<|recipient|>os\n"
+            texts.append(text)
+            image_inputs, _ = process_vision_info(messages)
+            all_images.extend(image_inputs)
+
+        batch_inputs = self.processor(text=texts, images=all_images, padding=True, return_tensors="pt")
+        batch_inputs = batch_inputs.to(self.model.device)
+
+        generated_ids = self.model.generate(**batch_inputs, temperature=self.config['temperature'], max_new_tokens=self.config['max_new_tokens'])
+        trimmed = [out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)]
+        output_texts = self.tokenizer.batch_decode(trimmed, skip_special_tokens=True)
+
+        return [self.postprocess(t.strip()) for t in output_texts]
+
     def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
         # prepare model inputs
         inputs = self._get_model_inputs(screenshot, task)

@@ -17,9 +17,13 @@ class GUIAgent(ABC):
     def load(self) -> None:
         """Load agent"""
     
-    def predict_click(sel, screenshot: Image, task: str) -> AgentOutput:
+    def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
         """predict click normalized (x,y) - for benchmarks like ScreenSpot"""
         raise NotImplementedError()
+
+    def predict_click_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
+        """Batch version of predict_click. Override in subclasses for true batch inference."""
+        return [self.predict_click(screenshot, task) for screenshot, task in inputs]
     
     def predict_action(sel, screenshot: Image, task: str) -> AgentOutput:
         """predict action - for benchmarks like MMBenchGUI"""

@@ -9,31 +9,16 @@ import sys
 import yaml
 import pandas as pd
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm.auto import tqdm
 
 from src.agents import build_agent
 from src.benchmarks import build_benchmark
 
 
-def _run_sample(args):
-    i, agent, sample = args
-    output = agent.predict_click(sample.screenshot, sample.task)
-    return {
-        'idx'        : i,
-        'task'       : sample.task,
-        'coord_x'    : output.coordinate[0] if output.coordinate else None,
-        'coord_y'    : output.coordinate[1] if output.coordinate else None,
-        'action_type': output.action_type,
-        'text'       : output.text,
-        'annotation' : sample.annotation,
-    }
-
-
 def main(config: dict):
     agent_config       = yaml.safe_load(Path(config['agent']).read_text())
     benchmark_config   = yaml.safe_load(Path(config['benchmark']).read_text())
-    
+
     agent     = build_agent(agent_config)
     benchmark = build_benchmark(benchmark_config)
 
@@ -45,18 +30,23 @@ def main(config: dict):
 
     for batch_start in tqdm(range(0, benchmark.size, batch_size), desc='batches'):
         batch_end = min(batch_start + batch_size, benchmark.size)
-        args = [
-            (i, agent, benchmark.get_sample(i))
-            for i in range(batch_start, batch_end)
+        samples = [benchmark.get_sample(i) for i in range(batch_start, batch_end)]
+
+        outputs = agent.predict_click_batch([(s.screenshot, s.task) for s in samples])
+
+        rows = [
+            {
+                'idx'        : batch_start + j,
+                'task'       : s.task,
+                'coord_x'    : o.coordinate[0] if o.coordinate else None,
+                'coord_y'    : o.coordinate[1] if o.coordinate else None,
+                'action_type': o.action_type,
+                'text'       : o.text,
+                'annotation' : s.annotation,
+            }
+            for j, (s, o) in enumerate(zip(samples, outputs))
         ]
 
-        rows = []
-        with ThreadPoolExecutor(max_workers=batch_size) as pool:
-            futures = {pool.submit(_run_sample, a): a[0] for a in args}
-            for future in as_completed(futures):
-                rows.append(future.result())
-
-        rows.sort(key=lambda r: r['idx'])
         pd.DataFrame(rows).to_csv(
             output_csv, mode='a', header=write_header, index=False
         )
