@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = "==3.12.3"
 dependencies = [
     "huggingface-hub>=1.9.0",
+    "langchain-openai>=1.1.14",
+    "loguru>=0.7.3",
+    "pydantic>=2.13.2",
     "qwen-vl-utils>=0.0.14",
     "ui-tars>=0.5.0",
 ]
