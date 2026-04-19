@@ -9,6 +9,7 @@ import sys
 import yaml
 import pandas as pd
 from pathlib import Path
+from loguru import logger
 from tqdm.auto import tqdm
 
 from src.agents import build_agent
@@ -36,9 +37,13 @@ def main(config: dict):
             start_idx = int(done['idx'].astype(int).max()) + 1
             write_header = False
 
+    logger.debug("Load All Images at once")
+    all_samples = [benchmark.get_sample(i) for i in range(start_idx, benchmark.size)]
+    logger.debug(f"Start generating with batchs {batch_size}")
+    
     for batch_start in tqdm(range(start_idx, benchmark.size, batch_size), desc='batches'):
         batch_end = min(batch_start + batch_size, benchmark.size)
-        samples = [benchmark.get_sample(i) for i in range(batch_start, batch_end)]
+        samples = all_samples[batch_start:batch_end]
 
         outputs = agent.predict_click_batch([(s.screenshot, s.task) for s in samples])
 
