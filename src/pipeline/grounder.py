@@ -23,10 +23,7 @@ def main(config: dict):
     agent     = build_agent(agent_config)
     benchmark = build_benchmark(benchmark_config)
 
-    batch_size     = config.get('batch_size', 1)
-    # REFINED [old]: single batch_size → [new]: preload_factor * batch_size samples loaded per chunk
-    preload_factor = config.get('preload_factor', 1)
-    preload_size   = preload_factor * batch_size
+    batch_size = config.get('batch_size', 1)
     output_csv = Path(config['output_csv'])
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
@@ -40,36 +37,29 @@ def main(config: dict):
             start_idx = int(done['idx'].astype(int).max()) + 1
             write_header = False
 
-    logger.debug(f"preload_size={preload_size}, batch_size={batch_size}")
+    for batch_start in tqdm(range(start_idx, benchmark.size, batch_size), desc='batches'):
+        batch_end = min(batch_start + batch_size, benchmark.size)
+        samples = [benchmark.get_sample(i) for i in range(batch_start, batch_end)]
 
-    for preload_start in tqdm(range(start_idx, benchmark.size, preload_size), desc='preload chunks'):
-        preload_end = min(preload_start + preload_size, benchmark.size)
-        logger.info("preload ...")
-        chunk_samples = [benchmark.get_sample(i) for i in range(preload_start, preload_end)]
-        logger.info("start generating")
-        for batch_offset in tqdm(range(0, len(chunk_samples), batch_size), desc="generating"):
-            batch_start = preload_start + batch_offset
-            samples = chunk_samples[batch_offset: batch_offset + batch_size]
+        outputs = agent.predict_click_batch([(s.screenshot, s.task) for s in samples])
 
-            outputs = agent.predict_click_batch([(s.screenshot, s.task) for s in samples])
+        rows = [
+            {
+                'idx'        : batch_start + j,
+                'task'       : s.task,
+                'coord_x'    : o.coordinate[0] if o.coordinate else None,
+                'coord_y'    : o.coordinate[1] if o.coordinate else None,
+                'action_type': o.action_type,
+                'text'       : o.text,
+                'annotation' : s.annotation,
+            }
+            for j, (s, o) in enumerate(zip(samples, outputs))
+        ]
 
-            rows = [
-                {
-                    'idx'        : batch_start + j,
-                    'task'       : s.task,
-                    'coord_x'    : o.coordinate[0] if o.coordinate else None,
-                    'coord_y'    : o.coordinate[1] if o.coordinate else None,
-                    'action_type': o.action_type,
-                    'text'       : o.text,
-                    'annotation' : s.annotation,
-                }
-                for j, (s, o) in enumerate(zip(samples, outputs))
-            ]
-
-            pd.DataFrame(rows).to_csv(
-                output_csv, mode='a', header=write_header, index=False
-            )
-            write_header = False
+        pd.DataFrame(rows).to_csv(
+            output_csv, mode='a', header=write_header, index=False
+        )
+        write_header = False
 
 
 if __name__ == '__main__':
