@@ -1,0 +1,4 @@
+class: screenspotpro
+params:
+  benchmark_path: ./data/raw/screenspot_pro
+  repo_id: likaixin/ScreenSpot-Pro
