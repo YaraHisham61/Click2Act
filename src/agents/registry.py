@@ -1,0 +1,14 @@
+from agents.base import GUIAgent
+from agents.aguvis import AGUVISAgent
+
+
+MODEL_REGISTRY: dict[str, type[GUIAgent]] = {
+    "aguvis": AGUVISAgent,
+}
+
+
+def build_agent(model_config: dict) -> GUIAgent:
+    cls = MODEL_REGISTRY[model_config["class"]]
+    agent = cls(model_config.get("params", {}))
+    agent.load()
+    return agent
