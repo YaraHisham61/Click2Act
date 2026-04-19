@@ -2,7 +2,7 @@ class: aguvis
 params:
   model_path: ./models/aguvis-7B-720P
   temperature: 0
-  max_new_tokens: 1024
+  max_new_tokens: 64
   dtype: float16
   device_map: auto
   repo_id: xlangai/Aguvis-7B-720P

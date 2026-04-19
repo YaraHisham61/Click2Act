@@ -26,9 +26,16 @@ def main(config: dict):
     output_csv = Path(config['output_csv'])
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
+    # REFINED [old]: always start from 0 → [new]: resume from last written idx
+    start_idx = 0
     write_header = True
+    if output_csv.exists():
+        done = pd.read_csv(output_csv)
+        if not done.empty:
+            start_idx = int(done['idx'].max()) + 1
+            write_header = False
 
-    for batch_start in tqdm(range(0, benchmark.size, batch_size), desc='batches'):
+    for batch_start in tqdm(range(start_idx, benchmark.size, batch_size), desc='batches'):
         batch_end = min(batch_start + batch_size, benchmark.size)
         samples = [benchmark.get_sample(i) for i in range(batch_start, batch_end)]
 
