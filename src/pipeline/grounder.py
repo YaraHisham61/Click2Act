@@ -44,8 +44,9 @@ def main(config: dict):
 
     for preload_start in tqdm(range(start_idx, benchmark.size, preload_size), desc='preload chunks'):
         preload_end = min(preload_start + preload_size, benchmark.size)
-        chunk_samples = [benchmark.get_sample(i) for i in tqdm(range(preload_start, preload_end), leave=False)]
-
+        logger.info("preload ...")
+        chunk_samples = [benchmark.get_sample(i) for i in range(preload_start, preload_end)]
+        logger.info("start generating")
         for batch_offset in range(0, len(chunk_samples), batch_size):
             batch_start = preload_start + batch_offset
             samples = chunk_samples[batch_offset: batch_offset + batch_size]
