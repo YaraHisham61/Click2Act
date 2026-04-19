@@ -1,4 +1,4 @@
 agent: configs/agents/aguvis.yaml
 benchmark: configs/benchmarks/screenspotpro.yaml
-batch_size: 4
+batch_size: 8
 output_csv: experiments/2026-4-19_exp_aguvis_screenspotpro/grounder.csv
