@@ -1,6 +1,6 @@
-from benchmarks.base import Benchmark, BenchmarkSample
-from agents.base import AgentOutput
-from constants import DATA_PATH
+from src.benchmarks.base import Benchmark, BenchmarkSample
+from src.agents.base import AgentOutput
+from src.constants import DATA_PATH
 
 import json
 from PIL import Image

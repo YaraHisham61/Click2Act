@@ -1,4 +1,4 @@
-from agents.base import AgentOutput
+from src.agents.base import AgentOutput
 
 from PIL.Image import Image
 from abc import ABC, abstractmethod

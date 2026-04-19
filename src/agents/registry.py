@@ -1,5 +1,5 @@
-from agents.base import GUIAgent
-from agents.aguvis import AGUVISAgent
+from src.agents.base import GUIAgent
+from src.agents.aguvis import AGUVISAgent
 
 
 MODEL_REGISTRY: dict[str, type[GUIAgent]] = {

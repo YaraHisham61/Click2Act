@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 import numpy as np
-from .constants import C2A_PALETTE
+from src.constants import C2A_PALETTE
 
 def get_torch_dtype(dtype: str):
     if dtype == 'float16':

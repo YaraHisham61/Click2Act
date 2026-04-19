@@ -1,5 +1,5 @@
-from benchmarks.base import Benchmark
-from benchmarks.screenspotpro import ScreenSpotProBenchmark
+from src.benchmarks.base import Benchmark
+from src.benchmarks.screenspotpro import ScreenSpotProBenchmark
 
 
 BENCHMARKS_REGISTRY: dict[str, type[Benchmark]] = {

@@ -1,6 +1,6 @@
-from constants import MODELS_PATH
-from agents.base import GUIAgent, AgentOutput
-from utils import get_torch_dtype
+from src.constants import MODELS_PATH
+from src.agents.base import GUIAgent, AgentOutput
+from src.utils import get_torch_dtype
 
 import re
 import torch

@@ -12,8 +12,8 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm.auto import tqdm
 
-from agents import build_agent
-from benchmarks import build_benchmark
+from src.agents import build_agent
+from src.benchmarks import build_benchmark
 
 
 def _run_sample(args):
