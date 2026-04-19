@@ -2,9 +2,11 @@ from src.agents.base import AgentOutput
 
 from PIL.Image import Image
 from abc import ABC, abstractmethod
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class BenchmarkSample(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     screenshot: Image
     task: str
     annotation: dict
