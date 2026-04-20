@@ -55,7 +55,7 @@ class HALO2Agent(GUIAgent):
         batch_inputs = self.processor(text=texts, images=all_images, padding=True, return_tensors="pt")
         batch_inputs = batch_inputs.to(self.model.device)
 
-        generated_ids = self.model.generate(**batch_inputs, temperature=self.config['temperature'], max_new_tokens=self.config['max_new_tokens'])
+        generated_ids = self.model.generate(**batch_inputs, max_new_tokens=self.config['max_new_tokens'])
         generated_ids_trimmed = [out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)]
         output_texts = self.processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)
 
