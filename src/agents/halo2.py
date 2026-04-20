@@ -4,6 +4,7 @@ from src.utils import get_torch_dtype
 
 import re
 import json
+import torch
 from pathlib import Path
 from loguru import logger
 from PIL.Image import Image, Resampling
@@ -41,6 +42,7 @@ class HALO2Agent(GUIAgent):
      
     def load(self):
         self.model = AutoModelForImageTextToText.from_pretrained(self.model_path, torch_dtype=self.dtype, device_map=self.config['device_map'])
+        self.model.eval()
         self.processor = AutoProcessor.from_pretrained(self.model_path)
         # REFINED [old]: default right-padding → [new]: left-padding required for decoder-only batch generation
         self.processor.tokenizer.padding_side = 'left'
@@ -57,7 +59,8 @@ class HALO2Agent(GUIAgent):
         batch_inputs = self.processor(text=texts, images=all_images, padding=True, return_tensors="pt")
         batch_inputs = batch_inputs.to(self.model.device)
 
-        generated_ids = self.model.generate(**batch_inputs, max_new_tokens=self.config['max_new_tokens'])
+        with torch.inference_mode():
+            generated_ids = self.model.generate(**batch_inputs, max_new_tokens=self.config['max_new_tokens'])
         generated_ids_trimmed = [out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)]
         output_texts = self.processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)
 
@@ -73,7 +76,8 @@ class HALO2Agent(GUIAgent):
         inputs = self.processor(text=[text], images=[screenshot_processed], padding=True, return_tensors="pt")
         inputs = inputs.to(self.model.device)
         # generate ids
-        generated_ids = self.model.generate(**inputs, max_new_tokens=self.config['max_new_tokens'])
+        with torch.inference_mode():
+            generated_ids = self.model.generate(**inputs, max_new_tokens=self.config['max_new_tokens'])
         generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
         # decode ids
         output_text = self.processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)
