@@ -39,8 +39,14 @@ def main(config: dict):
             start_idx = int(done['idx'].astype(int).max()) + 1
             write_header = False
 
-    for batch_start in tqdm(range(start_idx, benchmark.size, batch_size), desc='batches'):
-        batch_end = min(batch_start + batch_size, benchmark.size)
+    # If I want to batch so I can upload every "dataset_size" row    
+    if 'dataset_size' in config:
+        size = min(start_idx + config['dataset_size'], benchmark.size)
+    else:
+        size = benchmark.size
+
+    for batch_start in tqdm(range(start_idx, size, batch_size), desc='batches'):
+        batch_end = min(batch_start + batch_size, size)
         samples = [benchmark.get_sample(i) for i in range(batch_start, batch_end)]
 
         outputs = agent.predict_click_batch([(s.screenshot, s.task) for s in samples])
