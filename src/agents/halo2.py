@@ -23,7 +23,6 @@ class HALO2Agent(GUIAgent):
     def __init__(self, config: dict[str, any]) -> None:
         super().__init__(config)
         
-        self.config.setdefault("temperature", 0)
         self.config.setdefault("max_new_tokens", 32)
         self.config.setdefault("model_path", str(MODELS_PATH / "halo2-4b"))
         self.config.setdefault("repo_id", "Hcompany/Holo2-4B")
@@ -72,7 +71,7 @@ class HALO2Agent(GUIAgent):
         inputs = self.processor(text=[text], images=[screenshot_processed], padding=True, return_tensors="pt")
         inputs = inputs.to(self.model.device)
         # generate ids
-        generated_ids = self.model.generate(**inputs, temperature=self.config['temperature'], max_new_tokens=self.config['max_new_tokens'])
+        generated_ids = self.model.generate(**inputs, max_new_tokens=self.config['max_new_tokens'])
         generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
         # decode ids
         output_text = self.processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)
