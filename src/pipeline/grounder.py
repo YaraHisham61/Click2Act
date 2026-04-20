@@ -5,8 +5,10 @@
 """
 Run An Agent as Grounder (i.e predict x,y) on Dataset/Benchmark and keeps results in file
 """
+import gc
 import sys
 import yaml
+import torch
 import pandas as pd
 from pathlib import Path
 from loguru import logger
@@ -61,6 +63,8 @@ def main(config: dict):
             output_csv, mode='a', header=write_header, index=False
         )
         write_header = False
+        gc.collect()
+        torch.cuda.empty_cache()
 
 
 if __name__ == '__main__':
