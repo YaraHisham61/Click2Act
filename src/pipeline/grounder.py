@@ -1,4 +1,4 @@
-# AI-GENERATED
+# AI-REFINED
 # Model  : Claude Sonnet 4.6
 # Date   : 2026-04-19
 # Prompt : Add batch processing with multi-threading per batch, CSV output via pandas, and __main__ entry point using pathlib
@@ -51,6 +51,7 @@ def main(config: dict):
                 'coord_y'    : o.coordinate[1] if o.coordinate else None,
                 'action_type': o.action_type,
                 'text'       : o.text,
+                'raw_output' : o.raw,
                 'annotation' : s.annotation,
             }
             for j, (s, o) in enumerate(zip(samples, outputs))
