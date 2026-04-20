@@ -25,11 +25,11 @@ class GUIAgent(ABC):
         """Batch version of predict_click. Override in subclasses for true batch inference."""
         return [self.predict_click(screenshot, task) for screenshot, task in inputs]
     
-    def predict_action(sel, screenshot: Image, task: str) -> AgentOutput:
+    def predict_action(self, screenshot: Image, task: str) -> AgentOutput:
         """predict action - for benchmarks like MMBenchGUI"""
         raise NotImplementedError()
     
-    def predict_stateful(sel, screenshot: Image, task: str, history: list[AgentOutput]) -> AgentOutput:
+    def predict_stateful(self, screenshot: Image, task: str, history: list[AgentOutput]) -> AgentOutput:
         """Multi-step actions with history - for benchmarks like OSWorld"""
         raise NotImplementedError()
     
