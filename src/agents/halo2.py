@@ -3,24 +3,30 @@ from src.agents.base import GUIAgent, AgentOutput
 from src.utils import get_torch_dtype
 
 import re
-import torch
+import json
 from pathlib import Path
 from loguru import logger
-from PIL.Image import Image
-from qwen_vl_utils import process_vision_info
+from PIL.Image import Image, Resampling
+from pydantic import BaseModel, Field
+from typing import Any, Literal, TypeAlias
+from qwen_vl_utils import process_vision_info, smart_resize
 from huggingface_hub import snapshot_download
-from transformers import Qwen2VLForConditionalGeneration, Qwen2VLProcessor
+from transformers import AutoModelForImageTextToText, AutoProcessor
 
 
+class ClickCoordinates(BaseModel):
+    x: int = Field(ge=0, le=1000, description="The x coordinate, normalized between 0 and 1000.")
+    y: int = Field(ge=0, le=1000, description="The y coordinate, normalized between 0 and 1000.")
 
-class HALOAgent(GUIAgent):
+
+class HALO2Agent(GUIAgent):
     def __init__(self, config: dict[str, any]) -> None:
         super().__init__(config)
         
         self.config.setdefault("temperature", 0)
-        self.config.setdefault("max_new_tokens", 1024)
-        self.config.setdefault("model_path", str(MODELS_PATH / "aguvis-7B-720P"))
-        self.config.setdefault("repo_id", "xlangai/Aguvis-7B-720P")
+        self.config.setdefault("max_new_tokens", 32)
+        self.config.setdefault("model_path", str(MODELS_PATH / "halo2-4b"))
+        self.config.setdefault("repo_id", "Hcompany/Holo2-4B")
         self.config.setdefault("dtype", "float16")
         self.config.setdefault("device_map", "auto")
         # set dtype
@@ -35,92 +41,86 @@ class HALOAgent(GUIAgent):
             )
      
     def load(self):
-        self.model = Qwen2VLForConditionalGeneration.from_pretrained(self.model_path, torch_dtype=self.dtype, device_map=self.config['device_map'])
-        self.processor = Qwen2VLProcessor.from_pretrained(self.model_path)
-        self.tokenizer = self.processor.tokenizer
+        self.model = AutoModelForImageTextToText.from_pretrained(self.model_path, torch_dtype=self.dtype, device_map=self.config['device_map'])
+        self.processor = AutoProcessor.from_pretrained(self.model_path)
     
     def predict_click_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
         texts, all_images = [], []
         for screenshot, task in inputs:
-            messages = self._get_chat_messages(screenshot, task)
-            text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=False, chat_template=chat_template)
-            text += "<|im_start|>assistant<|recipient|>os\n"
+            screenshot_processed = self.preprocess(screenshot)
+            messages = self._get_grounding_chat_messages(screenshot_processed, task)
+            text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, thinking=False)
             texts.append(text)
-            image_inputs, _ = process_vision_info(messages)
-            all_images.extend(image_inputs)
+            all_images.append(screenshot_processed)
 
         batch_inputs = self.processor(text=texts, images=all_images, padding=True, return_tensors="pt")
         batch_inputs = batch_inputs.to(self.model.device)
 
         generated_ids = self.model.generate(**batch_inputs, temperature=self.config['temperature'], max_new_tokens=self.config['max_new_tokens'])
-        trimmed = [out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)]
-        output_texts = self.tokenizer.batch_decode(trimmed, skip_special_tokens=True)
+        generated_ids_trimmed = [out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)]
+        output_texts = self.processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)
 
-        return [self.postprocess(t.strip()) for t in output_texts]
+        return [self.postprocess_grounding(t.strip()) for t in output_texts]
 
     def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
+        # prepare image input
+        screenshot_processed = self.preprocess(screenshot)
         # prepare model inputs
-        inputs = self._get_model_inputs(screenshot, task)
+        messages = self._get_grounding_chat_messages(screenshot_processed, task)
+        # >>> thinking false because we need grounding only
+        text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, thinking=False)
+        inputs = self.processor(text=[text], images=[screenshot_processed], padding=True, return_tensors="pt")
         inputs = inputs.to(self.model.device)
         # generate ids
         generated_ids = self.model.generate(**inputs, temperature=self.config['temperature'], max_new_tokens=self.config['max_new_tokens'])
-        generated_ids_trimmed = generated_ids.tolist()[0][len(inputs.input_ids[0]) :]
+        generated_ids_trimmed = [out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)]
         # decode ids
-        output_text = self.tokenizer.decode(generated_ids_trimmed, skip_special_tokens=True).strip()
-        
-        return self.postprocess(output_text)
+        output_text = self.processor.batch_decode(generated_ids_trimmed, skip_special_tokens=True)
+
+        return self.postprocess_grounding(output_text[0].strip())
     
-    def postprocess(self, raw_output: str):
-        if 'pyautogui.click' in raw_output:
-            match = re.search(r'x=([\d.]+),\s*y=([\d.]+)', raw_output)
-            # NOTE: aguvis already output x,y as normalized so we don't need to do it
-            if match:
-                x, y = float(match.group(1)), float(match.group(2))  
-                return AgentOutput(
-                    coordinate=(x,y),
-                    action_type="click",
-                    raw = {"content": raw_output}
-                )
-        
-        logger.error(f"AGUVIS: This action not handled to be parsed yet: raw_output={raw_output}")
-        return AgentOutput(raw = {"content": raw_output})
+    def preprocess(self, screenshot: Image) -> Image:
+        image_processor_config = self.processor.image_processor
+        resized_height, resized_width = smart_resize(
+            screenshot.height,
+            screenshot.width,
+            factor=image_processor_config.patch_size * image_processor_config.merge_size,
+            min_pixels=image_processor_config.size.get("shortest_edge", None),
+            max_pixels=image_processor_config.size.get("longest_edge", None),
+        )
+
+        processed_image = screenshot.resize(size=(resized_width, resized_height), resample=Resampling.LANCZOS)
+        return processed_image
     
-    def _get_model_inputs(self, screenshot: Image, task: str, history: str = "None"):
-        messages = self._get_chat_messages(screenshot, task, history)
-        text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=False, chat_template=chat_template)
-        text += "<|im_start|>assistant<|recipient|>os\n"
+    def postprocess_grounding(self, raw_output: str) -> AgentOutput:
+        try:
+            structured_output = ClickCoordinates(**json.loads(raw_output))
+            # since output normalized bet 0-1000 and I want to be bet 0-1
+            x, y = structured_output.x/1000, structured_output.y/1000
+            return AgentOutput(
+                coordinate=(x, y),
+                action_type="click",
+                raw = {"content": raw_output}
+            )
+        except Exception as err:
+            logger.error(f"AGUVIS: This action not handled to be parsed yet: raw_output={raw_output}\n error {err}")
+            return AgentOutput(raw = {"content": raw_output})
+    
+    def _get_grounding_chat_messages(self, screenshot: Image, task: str, history: str = "None") -> list[dict[str, any]]:
+        """Create the prompt structure for navigation task"""
+        return [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": screenshot},
+                    {"type": "text", "text": f"{GROUNDING_MSG}\t{task}"},
+                ],
+            },
+        ]
         
-        image_inputs, video_inputs = process_vision_info(messages)
-        inputs = self.processor(text=[text], images=image_inputs, videos=video_inputs, padding=True, return_tensors="pt")
-        
-        return inputs
-        
-    def _get_chat_messages(self, screenshot: Image, task: str, history: str = "None"):
-        system_message = { "role": "system", "content": GROUNDING_SYS_MSG }
-        user_message = {
-            "role": "user",
-            "content": [
-                {"type": "image", "image": screenshot},
-                {
-                    "type": "text",
-                    "text": USER_MSG_TEMPLATE.format( overall_goal=task, previous_actions=history),
-                }
-            ],
-        }
-        messages = [system_message, user_message]
-        
-        
-        return  messages
-        
-# --- Prompts Ref: are taking from Aguvis code aguvis/src/constants.py
-GROUNDING_SYS_MSG = "You are a GUI agent. You are given a task and a screenshot of the screen. You need to perform a series of pyautogui actions to complete the task."
-
-USER_MSG_TEMPLATE = """Please generate the next move according to the ui screenshot, instruction and previous actions.
-
-Instruction: {overall_goal}
-
-Previous actions:
-{previous_actions}
-"""
-# Chat Template
-chat_template = "{% set image_count = namespace(value=0) %}{% set video_count = namespace(value=0) %}{% for message in messages %}<|im_start|>{{ message['role'] }}\n{% if message['content'] is string %}{{ message['content'] }}<|im_end|>\n{% else %}{% for content in message['content'] %}{% if content['type'] == 'image' or 'image' in content or 'image_url' in content %}{% set image_count.value = image_count.value + 1 %}{% if add_vision_id %}Picture {{ image_count.value }}: {% endif %}<|vision_start|><|image_pad|><|vision_end|>{% elif content['type'] == 'video' or 'video' in content %}{% set video_count.value = video_count.value + 1 %}{% if add_vision_id %}Video {{ video_count.value }}: {% endif %}<|vision_start|><|video_pad|><|vision_end|>{% elif 'text' in content %}{{ content['text'] }}{% endif %}{% endfor %}<|im_end|>\n{% endif %}{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}"
+# --- Prompts Ref: are taking from Halo2
+GROUNDING_MSG = (
+        "Localize an element on the GUI image according to the provided target and output a click position.\n"
+        f"* You must output a valid JSON following the format: {ClickCoordinates.model_json_schema()}\n"
+        "Your target is:\n"
+)
