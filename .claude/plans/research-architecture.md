@@ -106,11 +106,10 @@ experiments/                    # Output of runs (gitignored)
 # src/agents/base.py
 @dataclass
 class AgentOutput:
-    action_type: str                      # "click" | "type" | "scroll" | "none"
-    coordinate: tuple[float, float] | None  # normalized (x, y) in [0,1]
-    text: str | None                      # for "type" actions
-    raw: dict                             # model-specific raw output (for debugging)
-```
+    coordinate: tuple[float, float] | None  # normalized (x, y)
+    action_type: str | None                 # "click" | "type" | "scroll" | etc 
+    text: str | None                        # for "type" actions
+    raw: dict                               # model-specific raw output 
 
 ### `GUIAgent` — Strategy interface
 
@@ -123,81 +122,44 @@ class GUIAgent(ABC):
     def load(self) -> None:
         """Load weights / initialize model."""
 
-    @abstractmethod
-    def predict(self, screenshot: PIL.Image.Image, instruction: str) -> AgentOutput:
-        """Run inference. Returns canonical AgentOutput."""
+    def predict_click(self, screenshot: PIL.Image.Image, instruction: str) -> AgentOutput:
+        """Grounding only — return a click coordinate. For example used in ScreenSpot-style benchmarks."""
+        raise NotImplementedError
+
+    def predict_action(self, screenshot: PIL.Image.Image, instruction: str) -> AgentOutput:
+        """Single-step action — return action_type + coordinate/text. For example used in MMBench-GUI."""
+        raise NotImplementedError
+
+    def predict_stateful(self, screenshot: PIL.Image.Image, instruction: str, history: list[AgentOutput],) -> AgentOutput:
+        """Multi-step action with prior-step history. Used by OSWorld-style benchmarks."""
+        raise NotImplementedError
 
     # Template method hooks (optional overrides):
-    def preprocess(self, screenshot): return screenshot
+    def preprocess(self, screenshot: PIL.Image.Image) -> PIL.Image.Image:
+        return screenshot
     def postprocess(self, raw_output) -> AgentOutput: ...
 ```
 
-### `BenchmarkAdapter` — Adapter interface
+Each agent implements only the predict variants its architecture supports.
+The benchmark adapter calls the correct variant via `task_mode` (see below).
+
+### `Benchmark` — strategy interface
 
 ```python
 # src/benchmarks/base.py
-@dataclass
-class BenchmarkSample:
-    id: str
-    screenshot: PIL.Image.Image
-    instruction: str
-    ground_truth: dict           # benchmark-specific GT (bbox, action, etc.)
-    metadata: dict
+class Benchmark(ABC):
+    def __init__(self, config: dict|None = None): ...
 
-class BenchmarkAdapter(ABC):
-    def __init__(self, config: dict): ...
+    def load_samples(self) : ...
 
     @abstractmethod
-    def load_samples(self) -> list[BenchmarkSample]: ...
-
-    @abstractmethod
-    def score(self, prediction: AgentOutput, sample: BenchmarkSample) -> dict:
-        """Compute per-sample metric. Returns dict of metric_name → value."""
-
-    def aggregate(self, per_sample_scores: list[dict]) -> dict:
-        """Aggregate scores. Default: mean of each metric. Override if needed."""
+    def score(self, predictions: [AgentOutput]) -> [dict]:
+        """Return per-sample metrics. """
 ```
+
+`task_mode` lets the evaluator call the right predict variant without knowing the benchmark.
 
 ---
-
-## Variant System (Two-Track)
-
-### Track 1 — Param variant (config only, same class)
-
-Use when changing: thresholds, prompt templates, confidence cutoffs, image resolution.
-
-```yaml
-# configs/models/omniparser_t07.yaml
-name: omniparser_t07
-class: omniparser                # → resolves to OmniParserAgent in registry
-params:
-  bbox_threshold: 0.7
-  iou_threshold: 0.1
-  caption_model: blip2
-```
-
-No new Python file needed.
-
-### Track 2 — Algorithmic variant (subclass)
-
-Use when changing: backbone, grounding algorithm, output parsing logic, multi-step strategy.
-
-```python
-# src/agents/omniparser/agent_v2.py
-class OmniParserAgentV2(OmniParserAgent):
-    """Replaces SAM1 with SAM2 backbone."""
-
-    def _load_backbone(self):          # override only the changed hook
-        return load_sam2(self.config)
-```
-
-```yaml
-# configs/models/omniparser_v2.yaml
-name: omniparser_v2
-class: omniparser_v2             # → resolves to OmniParserAgentV2
-params:
-  bbox_threshold: 0.5
-```
 
 ### Registry — wires both tracks together
 

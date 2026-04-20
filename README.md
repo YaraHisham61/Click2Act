@@ -70,6 +70,32 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
+## Framework
+### Add New Agent
+let's say you want to add `agentX`
+1. go to `src/agents` and create `agentX.py` inside it should be class inherit for `GUIAgent` from `src/agents/base.py` and override necssary functions
+     - __init__: init config file
+     - load: load model
+     - predict_click: if you want to run using `grounder`
+     - predict_click_batch (optional) to optimize running on dataset
+     - predict_action
+     - predict_stateful
+
+2. go to `src/agents/registry.py` add your agent inside `MODEL_REGISTRY`
+3. go to `config/agents` create new `agentX.yaml` file with base configuration of your model
+
+### Add New Benchmark
+1. go to `src/benchmarks` and create `benchX.py` inside it should be class inherit for `Benchmark` from `src/benchmarks/base.py` and override necssary functions
+     - __init__: init config file
+     - load_samples: load dataset/benchmark
+     - get_sample: takes idx and return BenchmarkSample
+2. go to `src/benchmarks/registry.py` add your agent inside `BENCHMARKS_REGISTRY`
+3. go to `config/benchmarks` create new `benchX.yaml` file with base configuration of your model
+
+### Experiment
+1. create new folder inside `experiements` called `{data}_expr-name`
+2. add yaml config file same as the name of script inside `src/pipeline`, forexample if I run `src/pipeline/grounder.py` I will call it `grounder.yaml`
+3. add README.md with results or summary of experiment 
 
 ## Branching & Commit Rules
 
