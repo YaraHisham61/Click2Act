@@ -42,6 +42,8 @@ class HALO2Agent(GUIAgent):
     def load(self):
         self.model = AutoModelForImageTextToText.from_pretrained(self.model_path, torch_dtype=self.dtype, device_map=self.config['device_map'])
         self.processor = AutoProcessor.from_pretrained(self.model_path)
+        # REFINED [old]: default right-padding → [new]: left-padding required for decoder-only batch generation
+        self.processor.tokenizer.padding_side = 'left'
     
     def predict_click_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
         texts, all_images = [], []
@@ -63,7 +65,7 @@ class HALO2Agent(GUIAgent):
 
     def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
         # prepare image input
-        screenshot_processed = self.preprocess(screenshot)
+        screenshot_processed = screenshot
         # prepare model inputs
         messages = self._get_grounding_chat_messages(screenshot_processed, task)
         # >>> thinking false because we need grounding only
@@ -102,7 +104,7 @@ class HALO2Agent(GUIAgent):
                 raw = {"content": raw_output}
             )
         except Exception as err:
-            logger.error(f"AGUVIS: This action not handled to be parsed yet: raw_output={raw_output}\n error {err}")
+            logger.error(f"HALO2: This action not handled to be parsed yet: raw_output={raw_output}\n error {err}")
             return AgentOutput(raw = {"content": raw_output})
     
     def _get_grounding_chat_messages(self, screenshot: Image, task: str, history: str = "None") -> list[dict[str, any]]:
