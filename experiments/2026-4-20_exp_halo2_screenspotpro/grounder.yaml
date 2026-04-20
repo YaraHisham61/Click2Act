@@ -1,5 +1,5 @@
 agent: configs/agents/halo2.yaml
 benchmark: configs/benchmarks/screenspotpro.yaml
-batch_size: 4
+batch_size: 1
 dataset_size: 50
 output_csv: experiments/2026-4-20_exp_halo2_screenspotpro/grounder.csv
