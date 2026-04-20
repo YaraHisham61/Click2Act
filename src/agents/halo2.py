@@ -68,7 +68,7 @@ class HALO2Agent(GUIAgent):
 
     def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
         # prepare image input
-        screenshot_processed = screenshot
+        screenshot_processed = self.preprocess(screenshot)
         # prepare model inputs
         messages = self._get_grounding_chat_messages(screenshot_processed, task)
         # >>> thinking false because we need grounding only

@@ -35,6 +35,7 @@ class ScreenSpotProBenchmark(Benchmark):
                         for ann_pth in self.annotations_paths]
         
         self.samples = [sample for group in annotation_groups for sample in group]
+        self.samples.sort(key=lambda x: x['img_size'][0]*x['img_size'][1])
         self.size = len(self.samples)
         
     def get_sample(self, idx: int) -> BenchmarkSample:
