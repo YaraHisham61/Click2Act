@@ -65,6 +65,7 @@ class ScreenSpotProBenchmark(Benchmark):
         return BenchmarkSample(
             screenshot=img,
             task=annotation['instruction'],
+            annotation=annotation
         )
     
     def score(self, predictions: [AgentOutput]) -> [dict]:
