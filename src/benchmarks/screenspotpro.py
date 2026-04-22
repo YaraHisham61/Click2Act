@@ -39,9 +39,10 @@ class ScreenSpotProBenchmark(Benchmark):
         self.size = len(self.samples)
         
         if self.config['sort_by_img_size'] == 'asc':
-            self.samples.sort(key=lambda x: x['img_size'][0]*x['img_size'][1])
+            self.samples.sort(key=lambda x: x['img_size'][0]*x['img_size'][1], stable=True)
         elif self.config['sort_by_img_size'] == 'desc':
-            self.samples.sort(key=lambda x: -1 * x['img_size'][0]*x['img_size'][1])
+            self.samples.sort(key=lambda x: -1 * x['img_size'][0]*x['img_size'][1], stable=True)
+     
         
     def get_sample(self, idx: int) -> BenchmarkSample:
         "Return a one sample"
