@@ -58,6 +58,15 @@ class ScreenSpotProBenchmark(Benchmark):
             annotation=sample
         )
     
+    def get_sample_from_annotation(self, annotation: dict) -> BenchmarkSample:
+        "Return Benchmark Sample from annotation dict (used in rerun failed ones)"
+        sample_img_path = self.images_dir_path / annotation['img_filename']
+        img = Image.open(sample_img_path).convert('RGB')
+        return BenchmarkSample(
+            screenshot=img,
+            task=annotation['instruction'],
+        )
+    
     def score(self, predictions: [AgentOutput]) -> [dict]:
         """Return per-sample metrics. """
         raise NotImplementedError()
