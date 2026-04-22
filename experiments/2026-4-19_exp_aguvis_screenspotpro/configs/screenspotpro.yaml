@@ -1,0 +1,6 @@
+class: screenspotpro
+params:
+  benchmark_path: ./data/raw/screenspot_pro
+  repo_id: likaixin/ScreenSpot-Pro
+  # just to mimic original dataset sorting when I run first -- it would be faster to run asc
+  sort_by_img_size: null # asc | desc | null
