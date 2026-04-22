@@ -1,0 +1,5 @@
+batch_size: 8
+mode: rerun_failed_ones
+agent: experiments/2026-4-19_exp_aguvis_screenspotpro/configs/aguvis_prompt_change.yaml
+benchmark: experiments/2026-4-19_exp_aguvis_screenspotpro/configs/screenspotpro.yaml
+output_csv: experiments/2026-4-19_exp_aguvis_screenspotpro/grounder_rerun_failed_ones_w_prompt_change.csv
