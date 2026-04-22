@@ -13,6 +13,7 @@ class ScreenSpotProBenchmark(Benchmark):
         super().__init__(config)
         self.config.setdefault("benchmark_path", str(DATA_PATH / "raw" / "screenspot_pro"))
         self.config.setdefault("repo_id", "likaixin/ScreenSpot-Pro")
+        self.config.setdefault("sort_by_img_size", "asc")
         
         self.benchmark_path = Path(self.config['benchmark_path'])
         if not self.benchmark_path.exists():
@@ -35,8 +36,12 @@ class ScreenSpotProBenchmark(Benchmark):
                         for ann_pth in self.annotations_paths]
         
         self.samples = [sample for group in annotation_groups for sample in group]
-        self.samples.sort(key=lambda x: x['img_size'][0]*x['img_size'][1])
         self.size = len(self.samples)
+        
+        if self.config['sort_by_img_size'] == 'asc':
+            self.samples.sort(key=lambda x: x['img_size'][0]*x['img_size'][1])
+        elif self.config['sort_by_img_size'] == 'desc':
+            self.samples.sort(key=lambda x: -1 * x['img_size'][0]*x['img_size'][1])
         
     def get_sample(self, idx: int) -> BenchmarkSample:
         "Return a one sample"
