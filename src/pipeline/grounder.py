@@ -126,7 +126,7 @@ def rerun_failed_ones(config: dict):
         gc.collect()
         torch.cuda.empty_cache()
         
-    results.to_csv(output_csv,  index=False)
+    results.to_csv(output_csv,  index=True)
 
     
 if __name__ == '__main__':
