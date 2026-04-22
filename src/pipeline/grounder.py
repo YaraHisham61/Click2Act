@@ -11,13 +11,14 @@ config:
     - batch_size    (default = 1)
     - dataset_size  (optional: number of rows taking after last idx in outpuut_csv)
     - mode          (optional)
-        - rerun_failed_ones :   run agent using on failed rows (null values in x,y) using **sample idx**
+        - rerun_failed_ones :   run agent using on failed rows (null values in x,y) using **annotation** dict
         - null              :   run agent on samples after last idx in output_csv
 NOTE: it very sensitive to output_csv idx column so if any change happen in data some samples will missed and repeat another results (alwayse make sure to check duplicates)              
 """
 
 import gc
 import sys
+import ast
 import yaml
 import torch
 import pandas as pd
@@ -95,6 +96,7 @@ def rerun_failed_ones(config: dict):
     assert output_csv.exists()
     
     results = pd.read_csv(output_csv, index_col=0)
+    results['annotation'] = results['annotation'].apply(ast.literal_eval)
     failed_results = results[results['coord_x'].isna()]
     # ------ generation loop -----
     for batch_start in tqdm(range(0, len(failed_results), batch_size), desc='batches'):
@@ -102,7 +104,7 @@ def rerun_failed_ones(config: dict):
         
         rows = failed_results.iloc[batch_start:batch_end]
         idxs = list(rows.index)
-        samples = [benchmark.get_sample(idx) for idx in idxs]
+        samples = [benchmark.get_sample_from_annotation(ann) for ann in rows['annotation']]
         # assert they all have same task
         assert all(sample.task == row_task 
                    for sample, row_task in zip(samples, rows['task'])
