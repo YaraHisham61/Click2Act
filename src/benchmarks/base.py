@@ -24,6 +24,11 @@ class Benchmark(ABC):
     def get_sample(self, idx: int) -> BenchmarkSample:
         "Return a one sample"
 
+    def get_sample_from_annotation(self, annotation: dict) -> BenchmarkSample:
+        "Return Benchmark Sample from annotation dict (used in rerun failed ones)"
+        raise NotImplementedError("Benchmark has no implementation of get sample from annotation")
+
     @abstractmethod
     def score(self, predictions: [AgentOutput]) -> [dict]:
         """Return per-sample metrics. """
+        

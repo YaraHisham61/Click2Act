@@ -23,6 +23,8 @@ class AGUVISAgent(GUIAgent):
         self.config.setdefault("repo_id", "xlangai/Aguvis-7B-720P")
         self.config.setdefault("dtype", "float16")
         self.config.setdefault("device_map", "auto")
+        self.config.setdefault("grounding_system_message", GROUNDING_SYS_MSG)
+        self.config.setdefault("user_message_template", USER_MSG_TEMPLATE)
         # set dtype
         self.dtype = get_torch_dtype(self.config['dtype'])
         # download model if not exist
@@ -71,7 +73,7 @@ class AGUVISAgent(GUIAgent):
         return self.postprocess(output_text)
     
     def postprocess(self, raw_output: str):
-        if 'pyautogui.click' in raw_output:
+        if 'pyautogui.click' in raw_output  or 'pyautogui.doubleClick' in raw_output:
             match = re.search(r'x=([\d.]+),\s*y=([\d.]+)', raw_output)
             # NOTE: aguvis already output x,y as normalized so we don't need to do it
             if match:
@@ -96,14 +98,14 @@ class AGUVISAgent(GUIAgent):
         return inputs
         
     def _get_chat_messages(self, screenshot: Image, task: str, history: str = "None"):
-        system_message = { "role": "system", "content": GROUNDING_SYS_MSG }
+        system_message = { "role": "system", "content": self.config['grounding_system_message'] }
         user_message = {
             "role": "user",
             "content": [
                 {"type": "image", "image": screenshot},
                 {
                     "type": "text",
-                    "text": USER_MSG_TEMPLATE.format( overall_goal=task, previous_actions=history),
+                    "text": self.config['user_message_template'].format( overall_goal=task, previous_actions=history),
                 }
             ],
         }
