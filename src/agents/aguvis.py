@@ -71,7 +71,7 @@ class AGUVISAgent(GUIAgent):
         return self.postprocess(output_text)
     
     def postprocess(self, raw_output: str):
-        if 'pyautogui.click' in raw_output:
+        if 'pyautogui.click' in raw_output  or 'pyautogui.doubleClick' in raw_output:
             match = re.search(r'x=([\d.]+),\s*y=([\d.]+)', raw_output)
             # NOTE: aguvis already output x,y as normalized so we don't need to do it
             if match:
