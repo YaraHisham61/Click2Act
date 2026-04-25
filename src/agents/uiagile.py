@@ -20,7 +20,7 @@ class UIAgileAgent(GUIAgent):
         self.config.setdefault("max_new_tokens", 128)        # more headroom for <think> tokens
         self.config.setdefault("model_path", str(MODELS_PATH / "ui-agile-3b"))
         self.config.setdefault("repo_id", "KDEGroup/UI-AGILE-3B")
-        self.config.setdefault("dtype", "bfloat16")           # model card says BF16
+        self.config.setdefault("dtype", "float16")           # model card says BF16
         self.config.setdefault("device_map", "auto")
         self.config.setdefault("thinking", True)              # UI-AGILE uses "Simple Thinking" reward
 
@@ -37,7 +37,7 @@ class UIAgileAgent(GUIAgent):
     def load(self):
         self.model = AutoModelForImageTextToText.from_pretrained(
             self.model_path,
-            torch_dtype=self.dtype,
+            dtype=self.dtype,
             device_map=self.config["device_map"],
         )
         self.model.eval()
@@ -64,7 +64,8 @@ class UIAgileAgent(GUIAgent):
 
         with torch.inference_mode():
             generated_ids = self.model.generate(
-                **inputs, max_new_tokens=self.config["max_new_tokens"]
+                **inputs, max_new_tokens=self.config["max_new_tokens"],
+                do_sample=False
             )
         generated_ids_trimmed = [
             out[len(inp):] for inp, out in zip(inputs.input_ids, generated_ids)
