@@ -1,0 +1,8 @@
+class: uiagile
+params:
+  model_path: ./models/UI-AGILE-3B
+  max_new_tokens: 32
+  dtype: float16
+  device_map: auto
+  repo_id: KDEGroup/UI-AGILE-3B
+  thinking: true
