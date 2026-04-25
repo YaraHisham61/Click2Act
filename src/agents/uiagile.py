@@ -35,9 +35,10 @@ class UIAgileAgent(GUIAgent):
             )
 
     def load(self):
+        # REFINED [old]: dtype=self.dtype → [new]: torch_dtype=self.dtype
         self.model = AutoModelForImageTextToText.from_pretrained(
             self.model_path,
-            dtype=self.dtype,
+            torch_dtype=self.dtype,
             device_map=self.config["device_map"],
         )
         self.model.eval()
