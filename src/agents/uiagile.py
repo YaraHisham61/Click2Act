@@ -1,3 +1,4 @@
+
 from src.constants import MODELS_PATH
 from src.agents.base import GUIAgent, AgentOutput
 from src.utils import get_torch_dtype
@@ -17,14 +18,26 @@ class UIAgileAgent(GUIAgent):
     def __init__(self, config: dict[str, any]) -> None:
         super().__init__(config)
 
-        self.config.setdefault("max_new_tokens", 128)        # more headroom for <think> tokens
-        self.config.setdefault("model_path", str(MODELS_PATH / "UI-AGILE-3B"))
+        self.config.setdefault("max_new_tokens", 128)
+        self.config.setdefault("model_path", str(MODELS_PATH / "ui-agile-3b"))
         self.config.setdefault("repo_id", "KDEGroup/UI-AGILE-3B")
-        self.config.setdefault("dtype", "float16")           # model card says BF16
         self.config.setdefault("device_map", "auto")
-        self.config.setdefault("thinking", True)              # UI-AGILE uses "Simple Thinking" reward
+        self.config.setdefault("thinking", True)
 
-        self.dtype = get_torch_dtype(self.config["dtype"])
+        # Qwen2.5-VL attention scores overflow to inf/nan with float16 because
+        # float16's max exponent (~65504) is too small for large sequence logits.
+        # bfloat16 shares float32's exponent range so it never overflows here.
+        # We intercept float16 from the config and silently promote it.
+        raw_dtype = self.config.get("dtype", "bfloat16")
+        if raw_dtype == "float16":
+            logger.warning(
+                "UIAgile: float16 causes NaN/inf overflow in Qwen2.5-VL attention "
+                "(torch.multinomial receives inf/nan probs -> CUDA assert). "
+                "Overriding dtype to bfloat16."
+            )
+            raw_dtype = "bfloat16"
+        self.config["dtype"] = raw_dtype
+        self.dtype = get_torch_dtype(raw_dtype)
 
         self.model_path = Path(self.config["model_path"])
         if not self.model_path.exists():
@@ -35,15 +48,17 @@ class UIAgileAgent(GUIAgent):
             )
 
     def load(self):
-        # REFINED [old]: dtype=self.dtype → [new]: torch_dtype=self.dtype
+        # `dtype` replaces the deprecated `torch_dtype` kwarg in recent transformers
         self.model = AutoModelForImageTextToText.from_pretrained(
             self.model_path,
-            torch_dtype=self.dtype,
+            dtype=self.dtype,
             device_map=self.config["device_map"],
         )
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(self.model_path)
+        # Left-padding required for decoder-only batch generation (same as HALO2)
         self.processor.tokenizer.padding_side = "left"
+
 
     # ------------------------------------------------------------------
     # Public predict interface
@@ -65,8 +80,7 @@ class UIAgileAgent(GUIAgent):
 
         with torch.inference_mode():
             generated_ids = self.model.generate(
-                **inputs, max_new_tokens=self.config["max_new_tokens"],
-                do_sample=False
+                **inputs, max_new_tokens=self.config["max_new_tokens"]
             )
         generated_ids_trimmed = [
             out[len(inp):] for inp, out in zip(inputs.input_ids, generated_ids)
@@ -117,14 +131,25 @@ class UIAgileAgent(GUIAgent):
     # ------------------------------------------------------------------
 
     def preprocess(self, screenshot: Image) -> Image:
-        """Resize to the processor's expected resolution using smart_resize."""
+        """Resize to the processor's expected resolution using smart_resize.
+
+        We hard-cap max_pixels here rather than relying on the processor's stored
+        value because Qwen2.5-VL's default longest_edge can be ~12M pixels —
+        producing images that OOM a 16GB GPU. HALO2 avoids this because its
+        processor config was saved with a much lower cap.
+        """
         image_processor_config = self.processor.image_processor
+        factor = image_processor_config.patch_size * image_processor_config.merge_size
+        # Hard cap: 1003520 = 784*1280 pixels ~ 1.4GB in bfloat16 for vision encoder.
+        # Safely leaves room for the 3B LLM weights (~6GB) on a 14.56GB GPU.
+        max_pixels = self.config.get("max_pixels", 1003520)
+        min_pixels = image_processor_config.size.get("shortest_edge", None)
         resized_height, resized_width = smart_resize(
             screenshot.height,
             screenshot.width,
-            factor=image_processor_config.patch_size * image_processor_config.merge_size,
-            min_pixels=image_processor_config.size.get("shortest_edge", None),
-            max_pixels=image_processor_config.size.get("longest_edge", None),
+            factor=factor,
+            min_pixels=min_pixels,
+            max_pixels=max_pixels,
         )
         return screenshot.resize(
             size=(resized_width, resized_height), resample=Resampling.LANCZOS
@@ -137,7 +162,7 @@ class UIAgileAgent(GUIAgent):
         UI-AGILE / Qwen2.5-VL outputs absolute pixel coordinates, e.g.:
           <point x="512" y="384">element</point>
           or plain:  (512, 384)
-        We normalise to [0, 1] to match the shared AgentOutput contract.
+        Normalise to [0, 1] to match the shared AgentOutput contract.
         """
         try:
             # Pattern 1: <point x="..." y="...">...</point>
@@ -156,7 +181,7 @@ class UIAgileAgent(GUIAgent):
                 else:
                     raise ValueError(f"No coordinate pattern found in: {raw_output!r}")
 
-            # Normalise absolute pixels → [0, 1]
+            # Normalise absolute pixels -> [0, 1]
             x = x_abs / img_width
             y = y_abs / img_height
 
@@ -179,11 +204,6 @@ class UIAgileAgent(GUIAgent):
     def _get_grounding_chat_messages(
         self, screenshot: Image, task: str
     ) -> list[dict[str, any]]:
-        """
-        UI-AGILE is trained on the standard Qwen2.5-VL GUI-grounding prompt:
-        a system turn describing the agent role, followed by a user turn
-        with the screenshot and the target instruction.
-        """
         return [
             {
                 "role": "system",
@@ -210,8 +230,8 @@ SYSTEM_MSG = (
 )
 
 GROUNDING_MSG = (
-    "Please find the element described below and output its location as a point "
-    "in the format <point x=\"X\" y=\"Y\">element</point>, "
-    "where X and Y are pixel coordinates on the screenshot.\n\n"
-    "Target: {task}"
+    'Output only a point tag for the target element, nothing else.\n'
+    'Format: <point x="X" y="Y">t</point>\n\n'
+    'Target: {task}'
 )
+
