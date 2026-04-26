@@ -18,7 +18,7 @@ class UIAgileAgent(GUIAgent):
         super().__init__(config)
 
         self.config.setdefault("max_new_tokens", 128)        # more headroom for <think> tokens
-        self.config.setdefault("model_path", str(MODELS_PATH / "ui-agile-3b"))
+        self.config.setdefault("model_path", str(MODELS_PATH / "UI-AGILE-3B"))
         self.config.setdefault("repo_id", "KDEGroup/UI-AGILE-3B")
         self.config.setdefault("dtype", "float16")           # model card says BF16
         self.config.setdefault("device_map", "auto")
