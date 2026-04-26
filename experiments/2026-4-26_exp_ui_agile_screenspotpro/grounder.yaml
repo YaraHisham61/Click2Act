@@ -1,4 +1,5 @@
 agent: configs/agents/ui_agile.yaml
 benchmark: configs/benchmarks/screenspotpro.yaml
 batch_size: 2
+dataset_size: 10
 output_csv: experiments/2026-4-26_exp_ui_agile_screenspotpro/grounder.csv
