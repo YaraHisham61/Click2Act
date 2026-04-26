@@ -5,4 +5,5 @@ params:
   dtype: float16
   device_map: auto
   repo_id: KDEGroup/UI-AGILE-3B
-  thinking: false
+
+
