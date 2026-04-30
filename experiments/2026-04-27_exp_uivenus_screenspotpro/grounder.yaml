@@ -1,0 +1,4 @@
+agent: configs/agents/uivenus_ground_7b.yaml
+benchmark: configs/benchmarks/screenspotpro.yaml
+batch_size: 1
+output_csv: experiments/2026-04-27_exp_uivenus_screenspotpro/grounder.csv

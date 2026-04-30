@@ -1,0 +1,13 @@
+class: uivenus_ground
+params:
+  model_path: ./models/ui-venus-ground-7b
+  repo_id: inclusionAI/UI-Venus-Ground-7B
+  dtype: bfloat16
+  device_map: auto
+  max_new_tokens: 128
+  temperature: 0.0
+  do_sample: false
+  trust_remote_code: true
+  attn_implementation: null
+  vision_patch_size: 14
+  grounding_prompt_template: "Outline the position corresponding to the instruction: {instruction}. The output should be only [x1,y1,x2,y2]."
