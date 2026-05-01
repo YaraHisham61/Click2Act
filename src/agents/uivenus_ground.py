@@ -56,7 +56,7 @@ class UIVenusGroundAgent(GUIAgent):
 
     def _dbg(self, message: str) -> None:
         if self.config.get("debug_predict", False):
-            print(f"[uivenus-debug] {message}")
+            print(f"[uivenus-debug] {message}", flush=True)
 
     def _has_complete_weights(self, model_path: Path) -> bool:
         index_path = model_path / "model.safetensors.index.json"
