@@ -17,8 +17,12 @@ class AndroidControlBenchmark(Benchmark):
         super().__init__(config)
         self.config.setdefault("benchmark_path", str(DATA_PATH / "raw" / "android_control"))
         self.config.setdefault("repo_id", "aliaagheis/android-control")
-        
+        # REFINED [old]: extracted alongside benchmark_path → [new]: separate extracted_path so read-only inputs (e.g. /kaggle/input) work
+        self.config.setdefault("extracted_path", self.config["benchmark_path"])
+
         self.benchmark_path = Path(self.config['benchmark_path'])
+        self.extracted_path = Path(self.config['extracted_path'])
+
         if not self.benchmark_path.exists():
             snapshot_download(
                 repo_id=self.config["repo_id"],
@@ -27,13 +31,13 @@ class AndroidControlBenchmark(Benchmark):
                 local_dir_use_symlinks=False,
                 allow_patterns=["data/android_control.tar.gz"]
             )
-        
-        self.zip_path = Path(self.config['benchmark_path']) / "data/android_control.tar.gz"
+
+        self.zip_path = self.benchmark_path / "data/android_control.tar.gz"
 
     def load_samples(self) -> None:
-        extract_tar(self.zip_path, self.benchmark_path)
+        extract_tar(self.zip_path, self.extracted_path)
 
-        parquet_files = sorted(self.benchmark_path.rglob("*.parquet"))
+        parquet_files = sorted(self.extracted_path.rglob("*.parquet"))
         if not parquet_files:
             raise FileNotFoundError(f"No parquet files found in {self.benchmark_path}")
 
