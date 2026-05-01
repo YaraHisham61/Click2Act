@@ -25,7 +25,7 @@ class AndroidControlBenchmark(Benchmark):
                 repo_type="dataset",
                 local_dir=str(self.config["benchmark_path"]),
                 local_dir_use_symlinks=False,
-                target_files="data/android_control.tar.gz"
+                allow_patterns=["data/android_control.tar.gz"]
             )
         
         self.zip_path = Path(self.config['benchmark_path']) / "data/android_control.tar.gz"
