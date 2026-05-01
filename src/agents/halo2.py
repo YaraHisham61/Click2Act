@@ -9,8 +9,7 @@ from pathlib import Path
 from loguru import logger
 from PIL.Image import Image, Resampling
 from pydantic import BaseModel, Field
-from typing import Any, Literal, TypeAlias
-from qwen_vl_utils import process_vision_info, smart_resize
+from qwen_vl_utils import smart_resize
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
