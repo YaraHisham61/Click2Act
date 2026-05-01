@@ -1,0 +1,5 @@
+batch_size: 8
+dataset_size: 100
+benchmark: configs/benchmarks/androidcontrol.yaml
+agent: experiments/2026-5-1_exp_aguvis_android_control/config/aguvis.yaml
+output_csv: experiments/2026-5-1_exp_aguvis_android_control/action_scorer.csv

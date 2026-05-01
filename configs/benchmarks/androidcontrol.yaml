@@ -1,0 +1,4 @@
+class: androidcontrol
+params:
+  benchmark_path: ./data/raw/android_control
+  repo_id: aliaagheis/android-control

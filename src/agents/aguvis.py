@@ -31,6 +31,7 @@ class AGUVISAgent(GUIAgent):
         self.config.setdefault("low_level_instruction", None) # if there's detailed low level instructions to enforce instead of thinking
         # set dtype
         self.dtype = get_torch_dtype(self.config['dtype'])
+        logeger.debug(f"initalize agent with config={config}")
         # download model if not exist
         self.model_path = Path(self.config["model_path"])
         if not self.model_path.exists():
