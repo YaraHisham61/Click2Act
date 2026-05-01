@@ -62,7 +62,8 @@ def main(config: dict):
                 'idx'        : batch_start + j,
                 'task'       : s.task,
                 'annotation' : s.annotation,
-                'raw_output' : o.o.model_dump_json(),
+                # REFINED [old]: o.o.model_dump_json() → [new]: o.model_dump_json()
+                'raw_output' : o.model_dump_json(),
             }
             for j, (s, o) in enumerate(zip(samples, outputs))
         ]
