@@ -34,6 +34,7 @@ class UIVenusGroundAgent(GUIAgent):
         self.config.setdefault("attn_implementation", None)
         self.config.setdefault("trust_remote_code", True)
         self.config.setdefault("vision_patch_size", 14)
+        self.config.setdefault("debug_predict", False)
         self.config.setdefault(
             "grounding_prompt_template",
             "Outline the position corresponding to the instruction: {instruction}. The output should be only [x1,y1,x2,y2].",
@@ -45,11 +46,17 @@ class UIVenusGroundAgent(GUIAgent):
         self.processor: Any = None
 
         if not self.model_path.exists() or not self._has_complete_weights(self.model_path):
+            self._dbg("Model path missing/incomplete. Downloading snapshot...")
             snapshot_download(
                 repo_id=self.config["repo_id"],
                 local_dir=str(self.model_path),
                 local_dir_use_symlinks=False,
             )
+            self._dbg("Snapshot download completed.")
+
+    def _dbg(self, message: str) -> None:
+        if self.config.get("debug_predict", False):
+            print(f"[uivenus-debug] {message}")
 
     def _has_complete_weights(self, model_path: Path) -> bool:
         index_path = model_path / "model.safetensors.index.json"
@@ -68,6 +75,7 @@ class UIVenusGroundAgent(GUIAgent):
             return False
 
     def load(self):
+        self._dbg("Loading model and processor...")
         load_kwargs = {
             "torch_dtype": self.dtype,
             "device_map": self.config["device_map"],
@@ -84,21 +92,27 @@ class UIVenusGroundAgent(GUIAgent):
             self.model_path,
             trust_remote_code=self.config["trust_remote_code"],
         )
+        self._dbg("Model and processor loaded.")
 
     def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
         return self.predict_click_batch([(screenshot, task)])[0]
 
     def predict_click_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
+        self._dbg(f"predict_click_batch called with batch_size={len(inputs)}")
         messages_batch: list[list[dict[str, any]]] = []
         texts: list[str] = []
 
-        for screenshot, task in inputs:
+        for idx, (screenshot, task) in enumerate(inputs):
             messages = self._get_grounding_messages(screenshot, task)
             text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
             messages_batch.append(messages)
             texts.append(text)
+            self._dbg(
+                f"sample[{idx}] prepared: task_len={len(task)}, image_size=({screenshot.width}x{screenshot.height}), prompt_len={len(text)}"
+            )
 
         image_inputs, video_inputs = process_vision_info(messages_batch)
+        self._dbg(f"vision inputs prepared: images={len(image_inputs)}, videos={len(video_inputs)}")
         model_inputs = self.processor(
             text=texts,
             images=image_inputs,
@@ -106,14 +120,17 @@ class UIVenusGroundAgent(GUIAgent):
             padding=True,
             return_tensors="pt",
         ).to(self.model.device)
+        self._dbg(f"processor output tensors moved to device={self.model.device}")
 
         with torch.inference_mode():
+            self._dbg("generation started")
             generated_ids = self.model.generate(
                 **model_inputs,
                 max_new_tokens=self.config["max_new_tokens"],
                 do_sample=self.config["do_sample"],
                 temperature=self.config["temperature"],
             )
+        self._dbg("generation finished")
 
         generated_ids_trimmed = [
             out_ids[len(in_ids):] for in_ids, out_ids in zip(model_inputs.input_ids, generated_ids)
@@ -123,9 +140,13 @@ class UIVenusGroundAgent(GUIAgent):
             skip_special_tokens=True,
             clean_up_tokenization_spaces=False,
         )
+        self._dbg(f"decoded outputs count={len(output_texts)}")
+        if output_texts:
+            self._dbg(f"decoded[0] preview={output_texts[0][:160]}")
 
         image_grid_thw = model_inputs.get("image_grid_thw", None)
         dims = self._resolve_input_dims(image_grid_thw, len(output_texts))
+        self._dbg(f"resolved dims count={len(dims)} first_dim={dims[0] if dims else None}")
 
         return [
             self.postprocess_grounding(raw_output=raw_output.strip(), input_dims=dim)
@@ -134,6 +155,7 @@ class UIVenusGroundAgent(GUIAgent):
 
     def postprocess_grounding(self, raw_output: str, input_dims: tuple[float, float]) -> AgentOutput:
         input_width, input_height = input_dims
+        self._dbg(f"postprocess input_dims=({input_width}, {input_height}) raw_preview={raw_output[:120]}")
 
         try:
             x1, y1, x2, y2 = self._extract_box(raw_output)
@@ -160,6 +182,7 @@ class UIVenusGroundAgent(GUIAgent):
         patch = float(self.config["vision_patch_size"])
 
         if image_grid_thw is None:
+            self._dbg("image_grid_thw missing; using fallback dims 1000x1000")
             return [(1000.0, 1000.0)] * batch_size
 
         try:
@@ -172,6 +195,7 @@ class UIVenusGroundAgent(GUIAgent):
                 return dims * batch_size
             return dims + [dims[-1]] * (batch_size - len(dims))
         except (AttributeError, TypeError, ValueError):
+            self._dbg("failed to resolve image_grid_thw; using fallback dims 1000x1000")
             return [(1000.0, 1000.0)] * batch_size
 
     def _extract_box(self, raw_output: str) -> tuple[float, float, float, float]:
@@ -181,10 +205,14 @@ class UIVenusGroundAgent(GUIAgent):
             match = re.search(r"\[[^\]]+\]", candidate)
             if match:
                 candidate = match.group(0)
+            else:
+                self._dbg("no [x1,y1,x2,y2] block found via regex in raw output")
 
         box = ast.literal_eval(candidate)
         if not isinstance(box, (list, tuple)) or len(box) != 4:
             raise ValueError("Output is not a [x1,y1,x2,y2] list.")
+
+        self._dbg(f"parsed box={box}")
 
         return float(box[0]), float(box[1]), float(box[2]), float(box[3])
 
