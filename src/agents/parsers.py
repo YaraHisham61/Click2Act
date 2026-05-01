@@ -2,7 +2,7 @@
 Parsers for Agents
 """
 import re
-from agents.base import AgentOutput, CustomAction, CustomActionTypes
+from src.agents.base import AgentOutput, CustomAction, CustomActionTypes
 
 
 def _xy(s: str) -> tuple[float, float] | None:
