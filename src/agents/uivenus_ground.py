@@ -112,7 +112,7 @@ class UIVenusGroundAgent(GUIAgent):
             )
 
         image_inputs, video_inputs = process_vision_info(messages_batch)
-        self._dbg(f"vision inputs prepared: images={len(image_inputs)}, videos={len(video_inputs)}")
+        self._dbg(f"vision inputs prepared: images={len(image_inputs)}, videos={len([] if video_inputs is None else video_inputs)}")
         model_inputs = self.processor(
             text=texts,
             images=image_inputs,
