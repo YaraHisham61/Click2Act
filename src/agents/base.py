@@ -55,6 +55,10 @@ class GUIAgent(ABC):
         """predict action - for benchmarks like MMBenchGUI"""
         raise NotImplementedError()
     
+    def predict_action_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
+        """Batch version of predict_action. Override in subclasses for true batch inference."""
+        return [self.predict_action(screenshot, task) for screenshot, task in inputs]
+    
     def predict_stateful(self, screenshot: Image, task: str, history: list[AgentOutput]) -> AgentOutput:
         """Multi-step actions with history - for benchmarks like OSWorld"""
         raise NotImplementedError()
