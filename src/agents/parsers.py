@@ -5,6 +5,13 @@ import re
 from src.agents.base import AgentOutput, CustomAction, CustomActionTypes
 
 
+def _extract_code(s: str) -> str:
+    for marker in ('pyautogui.', 'mobile.'):
+        idx = s.find(marker)
+        if idx != -1:
+            return s[idx:]
+    return s
+
 def _xy(s: str) -> tuple[float, float] | None:
     m = re.search(r'x=([\d.]+),\s*y=([\d.]+)', s)
     if m:
@@ -16,6 +23,7 @@ def _xy(s: str) -> tuple[float, float] | None:
 
 def parse_pyautogui_action(raw_output: str) -> AgentOutput | None:
     """Parse a pyautogui / mobile tool-call string into AgentOutput. Returns None if unrecognised."""
+    raw_output = _extract_code(raw_output)
     raw = {"content": raw_output}
 
 
@@ -27,7 +35,7 @@ def parse_pyautogui_action(raw_output: str) -> AgentOutput | None:
             return AgentOutput(coordinate=xy, action_type=atype, raw=raw)
 
     elif 'pyautogui.write' in raw_output:
-        m = re.search(r"pyautogui\.write\(['\"](.+?)['\"]\)", raw_output)
+        m = re.search(r"pyautogui\.write\((?:message=)?['\"](.+?)['\"]", raw_output)
         if m:
             return AgentOutput(text=m.group(1), action_type="write", raw=raw)
 
@@ -48,8 +56,20 @@ def parse_pyautogui_action(raw_output: str) -> AgentOutput | None:
                 action_type="hotkey", raw=raw,
             )
 
+    elif 'pyautogui.hscroll' in raw_output:
+        m = re.search(r"pyautogui\.hscroll\((?:page=)?(-?[\d.]+)\)", raw_output)
+        if m:
+            page = float(m.group(1))
+            return AgentOutput(
+                custom_action=CustomAction(
+                    action=CustomActionTypes.SCROLL,
+                    params={"direction": "right" if page > 0 else "left", "clicks": page},
+                ),
+                action_type="scroll", raw=raw,
+            )
+
     elif 'pyautogui.scroll' in raw_output:
-        m = re.search(r"pyautogui\.scroll\((-?[\d.]+)\)", raw_output)
+        m = re.search(r"pyautogui\.scroll\((?:page=)?(-?[\d.]+)\)", raw_output)
         if m:
             clicks = float(m.group(1))
             return AgentOutput(
@@ -79,6 +99,7 @@ def parse_pyautogui_action(raw_output: str) -> AgentOutput | None:
 
 def parse_aguvis_mobile_action(raw_output: str) -> AgentOutput | None:
     # ── mobile / AGUVIS tool calls ────────────────────────────────────────
+    raw_output = _extract_code(raw_output)
     raw = {"content": raw_output}
     
     if 'mobile.home' in raw_output:
@@ -91,6 +112,16 @@ def parse_aguvis_mobile_action(raw_output: str) -> AgentOutput | None:
         return AgentOutput(
             custom_action=CustomAction(action=CustomActionTypes.PRESS_BACK),
             action_type="press_back", raw=raw,
+        )
+
+    elif 'mobile.wait' in raw_output:
+        m = re.search(r"mobile\.wait\((?:seconds=)?(-?[\d.]+)\)", raw_output)
+        return AgentOutput(
+            custom_action=CustomAction(
+                action=CustomActionTypes.WAIT,
+                params={"duration": float(m.group(1)) if m else 1},
+            ),
+            action_type="wait", raw=raw,
         )
 
     elif 'mobile.long_press' in raw_output:
