@@ -1,9 +1,8 @@
 from src.constants import MODELS_PATH
 from src.agents.base import GUIAgent, AgentOutput
+from src.agents.parsers import parse_pyautogui_action, parse_aguvis_mobile_action
 from src.utils import get_torch_dtype
 
-import re
-import torch
 from pathlib import Path
 from loguru import logger
 from PIL.Image import Image
@@ -72,20 +71,17 @@ class AGUVISAgent(GUIAgent):
         
         return self.postprocess(output_text)
     
-    def postprocess(self, raw_output: str):
-        if 'pyautogui.click' in raw_output  or 'pyautogui.doubleClick' in raw_output:
-            match = re.search(r'x=([\d.]+),\s*y=([\d.]+)', raw_output)
-            # NOTE: aguvis already output x,y as normalized so we don't need to do it
-            if match:
-                x, y = float(match.group(1)), float(match.group(2))  
-                return AgentOutput(
-                    coordinate=(x,y),
-                    action_type="click",
-                    raw = {"content": raw_output}
-                )
+    def postprocess(self, raw_output: str) -> AgentOutput:
+        result = parse_pyautogui_action(raw_output)
+        if result is not None:
+            return result
         
-        logger.error(f"AGUVIS: This action not handled to be parsed yet: raw_output={raw_output}")
-        return AgentOutput(raw = {"content": raw_output})
+        result = parse_aguvis_mobile_action(raw_output)
+        if result is not None:
+            return result
+        
+        logger.error(f"AGUVIS: unhandled action: {raw_output!r}")
+        return AgentOutput(raw={"content": raw_output})
     
     def _get_model_inputs(self, screenshot: Image, task: str, history: str = "None"):
         messages = self._get_chat_messages(screenshot, task, history)
