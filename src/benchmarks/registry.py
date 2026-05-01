@@ -1,9 +1,10 @@
 from src.benchmarks.base import Benchmark
 from src.benchmarks.screenspotpro import ScreenSpotProBenchmark
-
+from src.benchmarks.android_control import AndroidControlBenchmark
 
 BENCHMARKS_REGISTRY: dict[str, type[Benchmark]] = {
     "screenspotpro": ScreenSpotProBenchmark,
+    "androidcontrol": AndroidControlBenchmark,
 }
 
 
