@@ -89,6 +89,7 @@ class HOLO2Agent(GUIAgent):
             output = parse_holo2_action(raw_output)
             if not output:
                 raise Exception("couldn't parse output to one of actions")
+            return output
         except Exception as err:
             logger.error(f"HOLO2: This action not handled to be parsed yet: raw_output={raw_output}\n error {err}")
             return AgentOutput(raw = {"content": raw_output})
