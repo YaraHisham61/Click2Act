@@ -18,7 +18,7 @@ class HOLO2Agent(GUIAgent):
         super().__init__(config)
         
         self.config.setdefault("max_new_tokens", 32)
-        self.config.setdefault("model_path", str(MODELS_PATH / "halo2-4b"))
+        self.config.setdefault("model_path", str(MODELS_PATH / "holo2-4b"))
         self.config.setdefault("repo_id", "Hcompany/Holo2-4B")
         self.config.setdefault("dtype", "float16")
         self.config.setdefault("device_map", "auto")
@@ -90,7 +90,7 @@ class HOLO2Agent(GUIAgent):
             if not output:
                 raise Exception("couldn't parse output to one of actions")
         except Exception as err:
-            logger.error(f"HALO2: This action not handled to be parsed yet: raw_output={raw_output}\n error {err}")
+            logger.error(f"HOLO2: This action not handled to be parsed yet: raw_output={raw_output}\n error {err}")
             return AgentOutput(raw = {"content": raw_output})
     
     def _get_chat_messages(self, screenshot: Image, task: str, system_message: str, history: str = "None") -> list[dict[str, any]]:
@@ -105,7 +105,7 @@ class HOLO2Agent(GUIAgent):
             },
         ]
         
-# --- Prompts Ref: are taking from Halo2
+# --- Prompts Ref: are taking from Holo2
 GROUNDING_MSG = (
         "Localize an element on the GUI image according to the provided target and output a click position.\n"
         f"* You must output a valid JSON following the format: {ClickCoordinates.model_json_schema()}\n"
