@@ -20,6 +20,11 @@ class CustomActionTypes(str, Enum):
     KEY_PRESS   = "key_press"    # params: key  e.g. "esc", "tab", "space"
     HOTKEY      = "hotkey"       # params: keys (list)  e.g. ["ctrl", "c"]
     DRAG_TO     = "drag_to"      # params: x, y, optional button, duration
+    # ── Browser / Web (Holo2) ────────────────────────────────────────────────
+    GO_BACK     = "go_back"      # browser back navigation
+    REFRESH     = "refresh"      # browser page refresh
+    GOTO        = "goto"         # params: url
+    RESTART     = "restart"      # restart task from beginning
 
 
 class CustomAction(BaseModel):

@@ -1,12 +1,12 @@
 from src.agents.base import GUIAgent
 from src.agents.aguvis import AGUVISAgent
-from src.agents.halo2 import HALO2Agent
+from src.agents.holo2 import HOLO2Agent
 from src.agents.uiagile import UIAgileAgent
 
 
 MODEL_REGISTRY: dict[str, type[GUIAgent]] = {
     "aguvis": AGUVISAgent,
-    "halo2": HALO2Agent,
+    "holo2": HOLO2Agent,
     "uiagile":UIAgileAgent
 }
 
