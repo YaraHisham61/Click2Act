@@ -52,10 +52,11 @@ class HOLO2Agent(GUIAgent):
         return self.predict_action_batch([screenshot, task], grounding)[0]
     
     def predict_action_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
+        system_message = GROUNDING_MSG if self.config['mode'] == "grounding" else NAVIGATION_SYSTEM_PROMPT
         texts, all_images = [], []
         for screenshot, task in inputs:
             screenshot_processed = self.preprocess(screenshot)
-            messages = self._get_grounding_chat_messages(screenshot_processed, task)
+            messages = self._get_chat_messages(screenshot_processed, task, system_message)
             text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True, thinking=False)
             texts.append(text)
             all_images.append(screenshot_processed)
