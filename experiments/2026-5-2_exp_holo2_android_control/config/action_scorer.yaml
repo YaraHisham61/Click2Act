@@ -1,4 +1,4 @@
-batch_size: 8
+batch_size: 4
 dataset_size: 500
 agent: experiments/2026-5-2_exp_holo2_android_control/config/holo2.yaml
 output_csv: experiments/2026-5-2_exp_holo2_android_control/action_scorer.csv
