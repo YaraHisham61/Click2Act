@@ -262,7 +262,8 @@ class AGUVISZoomerAgent(GUIAgent):
 
             cropped_outputs = self.model.generate(vllm_inputs, [sampling_params] * len(needs_stage2))
 
-            for (i, ui_zoomer_output, w, h), cropped_image, cropped_out in zip(needs_stage2, cropped_outputs, cropped_images):
+            # REFINED [old]: zip(needs_stage2, cropped_outputs, cropped_images) → [new]: zip(needs_stage2, cropped_images, cropped_outputs)
+            for (i, ui_zoomer_output, w, h), cropped_image, cropped_out in zip(needs_stage2, cropped_images, cropped_outputs):
                 wc, hc = cropped_image.size
                 cropped_output_texts = [raw_out.text.strip() for raw_out in cropped_out.outputs]
                 try:
