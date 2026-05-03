@@ -1,0 +1,5 @@
+batch_size: 4
+dataset_size: 500
+agent: configs/agents/ui_zoomer_aguvis.yaml
+benchmark: configs/benchmarks/screenspotpro.yaml
+output_csv: experiments/2026-5-2_exp_aguvis_uizoom_screenspotpro/grounder.csv
