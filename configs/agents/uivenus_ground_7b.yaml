@@ -4,9 +4,9 @@ params:
   repo_id: inclusionAI/UI-Venus-Ground-7B
   dtype: bfloat16
   device_map: auto
-  max_new_tokens: 64
+  max_new_tokens: 48
   max_time: 20
-  max_pixels: 49152
+  max_pixels: 32768
   temperature: 0.0
   do_sample: false
   trust_remote_code: true
