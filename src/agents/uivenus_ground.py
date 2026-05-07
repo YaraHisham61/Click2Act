@@ -27,6 +27,7 @@ class UIVenusGroundAgent(GUIAgent):
         self.config.setdefault("max_new_tokens", 128)
         self.config.setdefault("temperature", 0.0)
         self.config.setdefault("do_sample", False)
+        self.config.setdefault("max_pixels", None)
         self.config.setdefault("model_path", str(MODELS_PATH / "ui-venus-ground-7b"))
         self.config.setdefault("repo_id", "inclusionAI/UI-Venus-Ground-7B")
         self.config.setdefault("dtype", "bfloat16")
@@ -113,23 +114,27 @@ class UIVenusGroundAgent(GUIAgent):
 
         image_inputs, video_inputs = process_vision_info(messages_batch)
         self._dbg(f"vision inputs prepared: images={len(image_inputs)}, videos={len([] if video_inputs is None else video_inputs)}")
-        model_inputs = self.processor(
+        processor_kwargs = dict(
             text=texts,
             images=image_inputs,
             videos=video_inputs,
             padding=True,
             return_tensors="pt",
-        ).to(self.model.device)
+        )
+        if self.config["max_pixels"] is not None:
+            processor_kwargs["max_pixels"] = self.config["max_pixels"]
+        model_inputs = self.processor(**processor_kwargs).to(self.model.device)
         self._dbg(f"processor output tensors moved to device={self.model.device}")
 
         with torch.inference_mode():
             self._dbg("generation started")
-            generated_ids = self.model.generate(
-                **model_inputs,
-                max_new_tokens=self.config["max_new_tokens"],
-                do_sample=self.config["do_sample"],
-                temperature=self.config["temperature"],
-            )
+            gen_kwargs = {
+                "max_new_tokens": self.config["max_new_tokens"],
+                "do_sample": self.config["do_sample"],
+            }
+            if self.config["do_sample"]:
+                gen_kwargs["temperature"] = self.config["temperature"]
+            generated_ids = self.model.generate(**model_inputs, **gen_kwargs)
         self._dbg("generation finished")
 
         generated_ids_trimmed = [

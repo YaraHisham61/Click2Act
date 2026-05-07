@@ -5,6 +5,7 @@ params:
   dtype: bfloat16
   device_map: auto
   max_new_tokens: 128
+  max_pixels: 262144
   temperature: 0.0
   do_sample: false
   trust_remote_code: true
