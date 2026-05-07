@@ -223,11 +223,14 @@ class UIVenusGroundAgent(GUIAgent):
 
     def _get_grounding_messages(self, screenshot: Image, task: str) -> list[dict[str, any]]:
         prompt = self.config["grounding_prompt_template"].format(instruction=task)
+        image_entry: dict[str, any] = {"type": "image", "image": screenshot}
+        if self.config.get("max_pixels") is not None:
+            image_entry["max_pixels"] = self.config["max_pixels"]
         return [
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": screenshot},
+                    image_entry,
                     {"type": "text", "text": prompt},
                 ],
             }
