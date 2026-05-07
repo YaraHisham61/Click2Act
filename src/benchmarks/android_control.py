@@ -72,8 +72,7 @@ class AndroidControlBenchmark(Benchmark):
         return BenchmarkSample(
             screenshot=img,
             task=sample['step_instruction'],
-            # REFINED [old]: annotation=sample → [new]: annotation={k: v for k, v in sample.items() if k != "screenshot_b64"}
-            annotation={k: v for k, v in sample.items() if k != "screenshot_b64"},
+            annotation=annotation,
         )
     
     def score(self, predictions: [AgentOutput]) -> [dict]:
