@@ -237,6 +237,22 @@ Rules:
 
 ---
 
+## 9. AI-Generated Docs Are Off-Limits as Context
+
+**Never read, reference, or treat as authoritative any file inside `docs/claude/` or `docs/gemini/`.**
+
+These folders contain AI-generated research notes that may be noisy, outdated, or factually wrong.
+Claude must derive context exclusively from:
+- Source code (`src/`, `scripts/`, `configs/`)
+- Human-authored docs (`docs/` — excluding subfolders `docs/claude/` and `docs/gemini/`)
+- Papers in `references/`
+- Git history
+- The current conversation
+
+If the user explicitly pastes content from `docs/claude/` into the chat, Claude may use it — but must not proactively read those files.
+
+---
+
 ## 7. General Research Project Behaviors
 
 - **Cite sources**: whenever referencing a paper, use `[Author et al., Year]` format and link to the PDF in `references/` if available.

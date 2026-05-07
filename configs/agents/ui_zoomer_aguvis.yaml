@@ -1,0 +1,20 @@
+class: ui_zoomer_aguvis
+params:
+  model_path: ./models/aguvis-7B-720P
+  temperature: 0
+  max_new_tokens: 1024
+  dtype: float16
+  device_map: auto
+  repo_id: xlangai/Aguvis-7B-720P
+  mode: grounding
+
+  tensor_parallel_size: 2
+  max_model_len: 4089
+  gpu_memory_utilization: 0.85
+
+  allow_ui_zoom: True
+  ui_zoom_num_candidates: 8
+  ui_zoom_point_var_ratio: 0.02
+  ui_zoom_confidence_threshold: 0.65
+  ui_zoom_min_crop: 256
+  ui_zoom_scale: 2.5

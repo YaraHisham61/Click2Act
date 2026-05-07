@@ -4,14 +4,11 @@ Evaluating Autonomous Agents for GUI Interaction
 
 SAM Prompt Analysis &amp; Robustness Evaluation
 
-> [!IMPORTANT]
-> AI Transparency  
-> every file, line using AI will be mentioned  
-> you can look on CLAUDE.md and GEMINI.md to see strict rules for AI transparency
-
 ## Folder Structure
 ```text
 Click2Act/
+├── imgs/                   # Images or Samples to test on
+├── models/                 # Weights of Models
 ├── data/                   # Data is kept separate from code
 │   ├── raw/                # Immutable original datasets
 │   ├── processed/          # Preprocessed data (e.g., resized, normalized)
@@ -73,6 +70,32 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
+## Framework
+### Add New Agent
+let's say you want to add `agentX`
+1. go to `src/agents` and create `agentX.py` inside it should be class inherit for `GUIAgent` from `src/agents/base.py` and override necssary functions
+     - __init__: init config file
+     - load: load model
+     - predict_click: if you want to run using `grounder`
+     - predict_click_batch (optional) to optimize running on dataset
+     - predict_action
+     - predict_stateful
+
+2. go to `src/agents/registry.py` add your agent inside `MODEL_REGISTRY`
+3. go to `config/agents` create new `agentX.yaml` file with base configuration of your model
+
+### Add New Benchmark
+1. go to `src/benchmarks` and create `benchX.py` inside it should be class inherit for `Benchmark` from `src/benchmarks/base.py` and override necssary functions
+     - __init__: init config file
+     - load_samples: load dataset/benchmark
+     - get_sample: takes idx and return BenchmarkSample
+2. go to `src/benchmarks/registry.py` add your agent inside `BENCHMARKS_REGISTRY`
+3. go to `config/benchmarks` create new `benchX.yaml` file with base configuration of your model
+
+### Experiment
+1. create new folder inside `experiements` called `{data}_expr-name`
+2. add yaml config file same as the name of script inside `src/pipeline`, forexample if I run `src/pipeline/grounder.py` I will call it `grounder.yaml`
+3. add README.md with results or summary of experiment 
 
 ## Branching & Commit Rules
 
@@ -113,3 +136,44 @@ exp(omniparser): compare bbox precision at 0.5 vs 0.7 threshold
 
 docs(proposal): fix spelling in problem definition
 ```
+
+---
+
+## AI Usage Disclaimer
+
+> [!IMPORTANT]
+> **AI Transparency**: every file, line using AI will be mentioned, you can look on CLAUDE.md and GEMINI.md to see strict rules for AI transparency
+
+This project uses AI assistants (claude and gemini) under strict transparency and containment rules.
+
+### Transparency
+
+Every file or line produced or modified by an AI is marked with header:
+
+```
+<!-- AI-GENERATED
+     Model   : <model name>
+     Date    : YYYY-MM-DD
+     Prompt  : <prompt summary>
+-->
+```
+
+Every inline edit is tracked with a `REFINED` comment directly above the changed line. 
+
+
+> See `CLAUDE.md` and `GEMINI.md` for the full rules.
+
+### AI-generated files location
+
+| Tool   | Output folder   |
+|--------|-----------------|
+| claude | `docs/claude/`  |
+| gemini | `docs/gemini/`  |
+
+`docs/` (root) is reserved for human-authored documentation only.
+
+### Context isolation
+
+AI tools are prohibited from reading their own generated output (`docs/claude/`, `docs/gemini/`). 
+
+These folders will contain noisy, outdated, and incorrect notes. Also recent research shows that AI reading its own rules or notes decrease its productivity and efficeny. 

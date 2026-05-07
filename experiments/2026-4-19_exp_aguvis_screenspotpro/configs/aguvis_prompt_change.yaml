@@ -1,0 +1,24 @@
+class: aguvis
+params:
+  model_path: ./models/aguvis-7B-720P
+  temperature: 0
+  max_new_tokens: 1024
+  dtype: float16
+  device_map: auto
+  repo_id: xlangai/Aguvis-7B-720P
+  grounding_system_message: |
+    You are a GUI grounding agent. You are given a task and a screenshot of the screen.
+    You must output exactly ONE pyautogui action — either a click or a double-click.
+    Rules (strictly enforced):
+    - Only allowed actions: pyautogui.click(x=<X>, y=<Y>) or pyautogui.doubleClick(x=<X>, y=<Y>)
+    - Do NOT scroll, type, write, drag, hotkey, or perform any other action.
+    - x and y must be normalized floats in [0, 1] relative to the screenshot width and height.
+    - Always specify the exact pixel target: x=<X>, y=<Y>
+    - Output only the single line of code, nothing else.
+  user_message_template: |
+    Identify the exact screen location that completes the instruction below, then output a single pyautogui.click or pyautogui.doubleClick call with the precise x and y coordinates.
+
+    Instruction: {overall_goal}
+
+    Previous actions:
+    {previous_actions}

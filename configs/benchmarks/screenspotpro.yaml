@@ -1,0 +1,5 @@
+class: screenspotpro
+params:
+  benchmark_path: ./data/raw/screenspot_pro
+  repo_id: likaixin/ScreenSpot-Pro
+  sort_by_img_size: asc # asc | desc | null
