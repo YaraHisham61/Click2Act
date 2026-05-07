@@ -14,6 +14,24 @@ from huggingface_hub import snapshot_download
 
 
 class AndroidControlBenchmark(Benchmark):
+    W, H = 1080, 2400
+                                                                                                                                                                                    
+    _AGENTOUT_TO_GT = { # custom agent outputs to benchmark outputs
+        "press_home": "navigate_home",             
+        "long_press": "long_press",
+        "open_app":   "open_app",
+        "terminate":  "status",      
+                                                                                                                                                           
+        "click":      "click",
+        "write":      "input_text",
+        "scroll":     "scroll",                                                                                                                                                         
+        "go_back":    "navigate_back",                                                                                                                                                  
+        "press_back": "navigate_back",                                                                                                                                     
+        "wait":       "wait",
+        # "answer":     "input_text" >> must special handle
+        "goto":        "open_app"
+    }
+    
     def __init__(self, config: dict[str, any]) -> None:
         super().__init__(config)
         self.config.setdefault("benchmark_path", str(DATA_PATH / "raw" / "android_control"))
@@ -80,18 +98,32 @@ class AndroidControlBenchmark(Benchmark):
         raise NotImplementedError()
     
     @staticmethod
-    def score_annotation(self, prediction, annotation) -> [dict]:
-        # Maps CustomActionTypes values → AndroidControl GT action_type strings
-        _CUSTOM_TO_GT: dict[str, str] = {
-            "press_home":  "navigate_home",
-            "press_back":  "navigate_back",
-            "long_press":  "long_press",
-            "scroll":      "scroll",
-            "swipe":       "swipe",
-            "open_app":    "open_app",
-            "terminate":   "status",
-            "wait":        "wait",
-        }
+    def score_annotation(pred: AgentOutput, annotation: dict, coord_threshold: float = 0.1) -> [dict]:
+        action  = annotation["action"]
+        gt_type = action["action_type"]
+        W, H = AndroidControlBenchmark.W, AndroidControlBenchmark.H
+        
+        if AndroidControlBenchmark._pred_action_type(pred) != gt_type:
+            return False
+
+        if gt_type in ("click", "long_press"):
+            if not pred.coordinate or action.get("x") is None:
+                return False
+            dist = math.sqrt((pred.coordinate[0] - action["x"] / W) ** 2 + (pred.coordinate[1] - action["y"] / H) ** 2)
+            return dist <= coord_threshold
+
+        if gt_type == "input_text":
+            return (pred.text or "").strip() == (action.get("text") or "").strip()
+
+        if gt_type == "open_app":
+            pred_app = (pred.custom_action.params or {}).get("app_name", "") if pred.custom_action else ""
+            return pred_app.lower() == (action.get("app_name") or "").lower()
+
+        if gt_type == "scroll":
+            pred_dir = (pred.custom_action.params or {}).get("direction", "") if pred.custom_action else ""
+            return pred_dir == (action.get("direction") or "")
+
+        return True  # navigate_home, navigate_back, wait, status — type match is enough
 
     @staticmethod
     def visualize_episode(episode: dict):
@@ -122,3 +154,13 @@ class AndroidControlBenchmark(Benchmark):
 
         plt.tight_layout()
         plt.show()
+    
+    @staticmethod
+    def _pred_action_type(pred: AgentOutput) -> str:
+        # >> handle special actions
+        if pred.action_type == "answer":
+            answer = pred.custom_action.params.get("answer","").lower()
+            if "completed" in answer or "terminated" in answer:
+                return "status"
+            return "input_text"
+        return AndroidControlBenchmark._AGENTOUT_TO_GT.get(pred.action_type, pred.action_type)
