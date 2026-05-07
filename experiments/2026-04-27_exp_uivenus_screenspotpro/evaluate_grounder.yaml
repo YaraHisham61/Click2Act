@@ -1,0 +1,3 @@
+input_csv: experiments/2026-04-27_exp_uivenus_screenspotpro/grounder.csv
+output_summary_json: experiments/2026-04-27_exp_uivenus_screenspotpro/eval_summary.json
+output_valid_csv: experiments/2026-04-27_exp_uivenus_screenspotpro/grounder_valid_only.csv

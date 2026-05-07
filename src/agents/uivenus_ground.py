@@ -28,6 +28,7 @@ class UIVenusGroundAgent(GUIAgent):
         self.config.setdefault("temperature", 0.0)
         self.config.setdefault("do_sample", False)
         self.config.setdefault("max_pixels", None)
+        self.config.setdefault("max_time", None)
         self.config.setdefault("model_path", str(MODELS_PATH / "ui-venus-ground-7b"))
         self.config.setdefault("repo_id", "inclusionAI/UI-Venus-Ground-7B")
         self.config.setdefault("dtype", "bfloat16")
@@ -132,6 +133,8 @@ class UIVenusGroundAgent(GUIAgent):
                 "max_new_tokens": self.config["max_new_tokens"],
                 "do_sample": self.config["do_sample"],
             }
+            if self.config.get("max_time") is not None:
+                gen_kwargs["max_time"] = float(self.config["max_time"])
             if self.config["do_sample"]:
                 gen_kwargs["temperature"] = self.config["temperature"]
             generated_ids = self.model.generate(**model_inputs, **gen_kwargs)

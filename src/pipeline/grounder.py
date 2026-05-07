@@ -19,6 +19,7 @@ NOTE: it very sensitive to output_csv idx column so if any change happen in data
 import gc
 import sys
 import ast
+import time
 import yaml
 import torch
 import pandas as pd
@@ -38,6 +39,9 @@ def main(config: dict):
     benchmark = build_benchmark(benchmark_config)
 
     batch_size = config.get('batch_size', 1)
+    save_every_n = int(config.get('save_every_n', 300))
+    sample_timeout_s = config.get('sample_timeout_s', None)
+    skip_too_slow = config.get('skip_too_slow', True)
     output_csv = Path(config['output_csv'])
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 
@@ -57,32 +61,105 @@ def main(config: dict):
     else:
         size = benchmark.size
 
+    ok_count = 0
+    failed_count = 0
+    timeout_count = 0
+    pending_rows = []
+
+    def flush_rows(force: bool = False) -> None:
+        nonlocal write_header, pending_rows
+        if not pending_rows:
+            return
+        if len(pending_rows) >= save_every_n or force:
+            pd.DataFrame(pending_rows).to_csv(
+                output_csv, mode='a', header=write_header, index=False
+            )
+            write_header = False
+            pending_rows = []
+
     for batch_start in tqdm(range(start_idx, size, batch_size), desc='batches'):
         batch_end = min(batch_start + batch_size, size)
         samples = [benchmark.get_sample(i) for i in range(batch_start, batch_end)]
 
-        outputs = agent.predict_click_batch([(s.screenshot, s.task) for s in samples])
+        rows = []
+        for j, s in enumerate(samples):
+            idx = batch_start + j
+            t0 = time.perf_counter()
+            status = 'ok'
+            failed_reason = None
 
-        rows = [
-            {
-                'idx'        : batch_start + j,
-                'task'       : s.task,
-                'coord_x'    : o.coordinate[0] if o.coordinate else None,
-                'coord_y'    : o.coordinate[1] if o.coordinate else None,
-                'action_type': o.action_type,
-                'text'       : o.text,
-                'raw_output' : o.raw,
-                'annotation' : s.annotation,
-            }
-            for j, (s, o) in enumerate(zip(samples, outputs))
-        ]
+            try:
+                o = agent.predict_click(s.screenshot, s.task)
+                elapsed_s = time.perf_counter() - t0
 
-        pd.DataFrame(rows).to_csv(
-            output_csv, mode='a', header=write_header, index=False
-        )
-        write_header = False
+                if sample_timeout_s is not None and elapsed_s > float(sample_timeout_s):
+                    if skip_too_slow:
+                        status = 'timeout'
+                        failed_reason = f'elapsed_s={elapsed_s:.3f} > sample_timeout_s={float(sample_timeout_s):.3f}'
+                        coord_x, coord_y = None, None
+                        timeout_count += 1
+                    else:
+                        coord_x = o.coordinate[0] if o.coordinate else None
+                        coord_y = o.coordinate[1] if o.coordinate else None
+                        ok_count += 1 if o.coordinate else 0
+                        failed_count += 0 if o.coordinate else 1
+                else:
+                    coord_x = o.coordinate[0] if o.coordinate else None
+                    coord_y = o.coordinate[1] if o.coordinate else None
+                    if o.coordinate is None:
+                        status = 'failed'
+                        failed_reason = 'coordinate_missing'
+                        failed_count += 1
+                    else:
+                        ok_count += 1
+
+                row = {
+                    'idx'        : idx,
+                    'task'       : s.task,
+                    'coord_x'    : coord_x,
+                    'coord_y'    : coord_y,
+                    'action_type': o.action_type,
+                    'text'       : o.text,
+                    'raw_output' : o.raw,
+                    'annotation' : s.annotation,
+                    'status'     : status,
+                    'failed_reason': failed_reason,
+                    'latency_s'  : elapsed_s,
+                }
+            except Exception as err:
+                elapsed_s = time.perf_counter() - t0
+                failed_count += 1
+                row = {
+                    'idx'        : idx,
+                    'task'       : s.task,
+                    'coord_x'    : None,
+                    'coord_y'    : None,
+                    'action_type': None,
+                    'text'       : None,
+                    'raw_output' : None,
+                    'annotation' : s.annotation,
+                    'status'     : 'failed',
+                    'failed_reason': repr(err),
+                    'latency_s'  : elapsed_s,
+                }
+
+            rows.append(row)
+
+        pending_rows.extend(rows)
+        flush_rows(force=False)
         gc.collect()
         torch.cuda.empty_cache()
+
+    flush_rows(force=True)
+
+    logger.info(
+        "Grounder run complete | total={} ok={} failed={} timeout={} output_csv={}",
+        max(0, size - start_idx),
+        ok_count,
+        failed_count,
+        timeout_count,
+        output_csv,
+    )
 
 def rerun_failed_ones(config: dict):
     agent_config       = yaml.safe_load(Path(config['agent']).read_text())
