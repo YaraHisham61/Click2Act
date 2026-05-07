@@ -1,0 +1,5 @@
+agent: configs/agents/ui_agile_quant.yaml
+benchmark: configs/benchmarks/screenspotpro.yaml
+batch_size: 1
+data_size: 1
+output_csv: experiments/2026-5-8_exp_ui_agile_quant_screenspotpro/grounder_all.csv
