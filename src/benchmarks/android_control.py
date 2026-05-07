@@ -3,6 +3,7 @@ from src.agents.base import AgentOutput
 from src.constants import DATA_PATH
 from src.utils import extract_tar
 
+import math
 import pandas as pd
 from PIL import Image
 from io import BytesIO
@@ -63,18 +64,36 @@ class AndroidControlBenchmark(Benchmark):
         sample: dict = self.samples[idx]
         # load image
         img = Image.open(BytesIO(base64.b64decode(sample["screenshot_b64"]))).convert('RGB')
+        width, height = img.size
         
+        # FIX: need h, w
+        annotation = {k: v for k, v in sample.items() if k != "screenshot_b64"}
+        annotation.update({'w': width, 'h': height})
         return BenchmarkSample(
             screenshot=img,
             task=sample['step_instruction'],
             # REFINED [old]: annotation=sample → [new]: annotation={k: v for k, v in sample.items() if k != "screenshot_b64"}
-            annotation={k: v for k, v in sample.items() if k != "screenshot_b64"}
+            annotation={k: v for k, v in sample.items() if k != "screenshot_b64"},
         )
     
     def score(self, predictions: [AgentOutput]) -> [dict]:
         """Return per-sample metrics. """
         raise NotImplementedError()
     
+    @staticmethod
+    def score_annotation(self, prediction, annotation) -> [dict]:
+        # Maps CustomActionTypes values → AndroidControl GT action_type strings
+        _CUSTOM_TO_GT: dict[str, str] = {
+            "press_home":  "navigate_home",
+            "press_back":  "navigate_back",
+            "long_press":  "long_press",
+            "scroll":      "scroll",
+            "swipe":       "swipe",
+            "open_app":    "open_app",
+            "terminate":   "status",
+            "wait":        "wait",
+        }
+
     @staticmethod
     def visualize_episode(episode: dict):
         imgs  = [Image.open(BytesIO(base64.b64decode(b))) for b in episode["screenshots_b64"]]
