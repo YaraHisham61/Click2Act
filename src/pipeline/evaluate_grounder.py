@@ -42,7 +42,12 @@ def main(config: dict) -> None:
         valid_mask = df["coord_x"].notna() & df["coord_y"].notna()
 
     valid_df = df[valid_mask].copy()
-    valid_df["point_in_bbox"] = valid_df.apply(_point_in_bbox, axis=1)
+    if len(valid_df) > 0:
+        valid_df["point_in_bbox"] = [
+            _point_in_bbox(row) for _, row in valid_df.iterrows()
+        ]
+    else:
+        valid_df["point_in_bbox"] = pd.Series(dtype=bool)
 
     total = int(len(df))
     valid = int(len(valid_df))
