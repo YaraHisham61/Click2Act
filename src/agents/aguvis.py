@@ -1,9 +1,10 @@
+from typing import Literal
 from src.constants import MODELS_PATH
 from src.agents.base import GUIAgent, AgentOutput
+from src.agents.parsers import parse_pyautogui_action, parse_aguvis_mobile_action
 from src.utils import get_torch_dtype
 
-import re
-import torch
+import json
 from pathlib import Path
 from loguru import logger
 from PIL.Image import Image
@@ -24,9 +25,13 @@ class AGUVISAgent(GUIAgent):
         self.config.setdefault("dtype", "float16")
         self.config.setdefault("device_map", "auto")
         self.config.setdefault("grounding_system_message", GROUNDING_SYS_MSG)
+        self.config.setdefault("agent_system_message", AGENT_SYS_MSG)
         self.config.setdefault("user_message_template", USER_MSG_TEMPLATE)
+        self.config.setdefault("mode", "grounding") # ["self-plan", "force-plan", "grounding"]
+        self.config.setdefault("low_level_instruction", None) # if there's detailed low level instructions to enforce instead of thinking
         # set dtype
         self.dtype = get_torch_dtype(self.config['dtype'])
+        logger.debug(f"initalize agent with config={config}")
         # download model if not exist
         self.model_path = Path(self.config["model_path"])
         if not self.model_path.exists():
@@ -40,65 +45,64 @@ class AGUVISAgent(GUIAgent):
         self.model = Qwen2VLForConditionalGeneration.from_pretrained(self.model_path, torch_dtype=self.dtype, device_map=self.config['device_map'])
         self.processor = Qwen2VLProcessor.from_pretrained(self.model_path)
         self.tokenizer = self.processor.tokenizer
-    
+        
     def predict_click_batch(self, inputs: list[tuple[Image, str]]) -> list[AgentOutput]:
+        return self.predict_action_batch(inputs, grounding=True) # same as predict click but with grounding message
+    
+    def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
+        return self.predict_action(screenshot, task, grounding=True) # same as predict click but with grounding message
+    
+    # ------------- action ----------------
+    def predict_action(self, screenshot: Image, task: str, grounding=False) -> AgentOutput:
+        return self.predict_action_batch([screenshot, task], grounding)[0]
+    
+    def predict_action_batch(self, inputs: list[tuple[Image, str]], grounding=False) -> list[AgentOutput]:
+        system_message = self.config['grounding_system_message'] if grounding else self.config['agent_system_message'] 
         texts, all_images = [], []
         for screenshot, task in inputs:
-            messages = self._get_chat_messages(screenshot, task)
-            text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=False, chat_template=chat_template)
-            text += "<|im_start|>assistant<|recipient|>os\n"
-            texts.append(text)
-            image_inputs, _ = process_vision_info(messages)
+            image_inputs, _, text = self._get_model_inputs(screenshot, task, system_message)
             all_images.extend(image_inputs)
+            texts.append(text)
 
-        batch_inputs = self.processor(text=texts, images=all_images, padding=True, return_tensors="pt")
-        batch_inputs = batch_inputs.to(self.model.device)
-
+        batch_inputs = self.processor(text=texts, images=all_images, padding=True, return_tensors="pt").to(self.model.device)
         generated_ids = self.model.generate(**batch_inputs, temperature=self.config['temperature'], max_new_tokens=self.config['max_new_tokens'])
         trimmed = [out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)]
         output_texts = self.tokenizer.batch_decode(trimmed, skip_special_tokens=True)
 
         return [self.postprocess(t.strip()) for t in output_texts]
 
-    def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
-        # prepare model inputs
-        inputs = self._get_model_inputs(screenshot, task)
-        inputs = inputs.to(self.model.device)
-        # generate ids
-        generated_ids = self.model.generate(**inputs, temperature=self.config['temperature'], max_new_tokens=self.config['max_new_tokens'])
-        generated_ids_trimmed = generated_ids.tolist()[0][len(inputs.input_ids[0]) :]
-        # decode ids
-        output_text = self.tokenizer.decode(generated_ids_trimmed, skip_special_tokens=True).strip()
-        
-        return self.postprocess(output_text)
     
-    def postprocess(self, raw_output: str):
-        if 'pyautogui.click' in raw_output  or 'pyautogui.doubleClick' in raw_output:
-            match = re.search(r'x=([\d.]+),\s*y=([\d.]+)', raw_output)
-            # NOTE: aguvis already output x,y as normalized so we don't need to do it
-            if match:
-                x, y = float(match.group(1)), float(match.group(2))  
-                return AgentOutput(
-                    coordinate=(x,y),
-                    action_type="click",
-                    raw = {"content": raw_output}
-                )
+    def postprocess(self, raw_output: str) -> AgentOutput:
+        result = parse_pyautogui_action(raw_output)
+        if result is not None:
+            return result
         
-        logger.error(f"AGUVIS: This action not handled to be parsed yet: raw_output={raw_output}")
-        return AgentOutput(raw = {"content": raw_output})
+        result = parse_aguvis_mobile_action(raw_output)
+        if result is not None:
+            return result
+        
+        logger.error(f"AGUVIS: unhandled action: {raw_output!r}")
+        return AgentOutput(raw={"content": raw_output})
     
-    def _get_model_inputs(self, screenshot: Image, task: str, history: str = "None"):
-        messages = self._get_chat_messages(screenshot, task, history)
+    def _get_model_inputs(self, screenshot: Image, task: str, system_message: str, history: str = "None"):
+        messages = self._get_chat_messages(screenshot, task, system_message, history)
         text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=False, chat_template=chat_template)
-        text += "<|im_start|>assistant<|recipient|>os\n"
+        # If low-level instruction is provided,  We enforce using "Action: {low_level_instruction} to guide generation"
+        if self.config['low_level_instruction']:
+            text += f"<|im_start|>assistant<|recipient|>all\nAction: {self.config['low_level_instruction']}\n"
+        elif self.config['mode'] == "grounding":
+            text += "<|im_start|>assistant<|recipient|>os\n"
+        elif self.config['mode'] == "self-plan":
+            text += "<|im_start|>assistant<|recipient|>"
+        elif self.config['mode'] == "force-plan":
+            text += "<|im_start|>assistant<|recipient|>all\nThought: "
         
         image_inputs, video_inputs = process_vision_info(messages)
-        inputs = self.processor(text=[text], images=image_inputs, videos=video_inputs, padding=True, return_tensors="pt")
         
-        return inputs
+        return image_inputs, video_inputs, text
         
-    def _get_chat_messages(self, screenshot: Image, task: str, history: str = "None"):
-        system_message = { "role": "system", "content": self.config['grounding_system_message'] }
+    def _get_chat_messages(self, screenshot: Image, task: str, system_message: str, history: str = "None"):
+        system_message = { "role": "system", "content": system_message }
         user_message = {
             "role": "user",
             "content": [
@@ -126,3 +130,113 @@ Previous actions:
 """
 # Chat Template
 chat_template = "{% set image_count = namespace(value=0) %}{% set video_count = namespace(value=0) %}{% for message in messages %}<|im_start|>{{ message['role'] }}\n{% if message['content'] is string %}{{ message['content'] }}<|im_end|>\n{% else %}{% for content in message['content'] %}{% if content['type'] == 'image' or 'image' in content or 'image_url' in content %}{% set image_count.value = image_count.value + 1 %}{% if add_vision_id %}Picture {{ image_count.value }}: {% endif %}<|vision_start|><|image_pad|><|vision_end|>{% elif content['type'] == 'video' or 'video' in content %}{% set video_count.value = video_count.value + 1 %}{% if add_vision_id %}Video {{ video_count.value }}: {% endif %}<|vision_start|><|video_pad|><|vision_end|>{% elif 'text' in content %}{{ content['text'] }}{% endif %}{% endfor %}<|im_end|>\n{% endif %}{% endfor %}{% if add_generation_prompt %}<|im_start|>assistant\n{% endif %}"
+
+
+# Plugin Functions
+select_option_func = {
+    "name": "browser.select_option",
+    "description": "Select an option from a dropdown menu",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "x": {
+                "type": "number",
+                "description": "The x coordinate of the dropdown menu",
+            },
+            "y": {
+                "type": "number",
+                "description": "The y coordinate of the dropdown menu",
+            },
+            "value": {
+                "type": "string",
+                "description": "The value of the option to select",
+            },
+        },
+        "required": ["x", "y", "value"],
+    },
+}
+
+swipe_func = {
+    "name": "mobile.swipe",
+    "description": "Swipe on the screen",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "from_coord": {
+                "type": "array",
+                "items": {"type": "number"},
+                "description": "The starting coordinates of the swipe",
+            },
+            "to_coord": {
+                "type": "array",
+                "items": {"type": "number"},
+                "description": "The ending coordinates of the swipe",
+            },
+        },
+        "required": ["from_coord", "to_coord"],
+    },
+}
+
+home_func = {"name": "mobile.home", "description": "Press the home button"}
+
+back_func = {"name": "mobile.back", "description": "Press the back button"}
+
+wait_func = {
+    "name": "mobile.wait",
+    "description": "wait for the change to happen",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "seconds": {
+                "type": "number",
+                "description": "The seconds to wait",
+            },
+        },
+        "required": ["seconds"],
+    },
+}
+
+long_press_func = {
+    "name": "mobile.long_press",
+    "description": "Long press on the screen",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "x": {
+                "type": "number",
+                "description": "The x coordinate of the long press",
+            },
+            "y": {
+                "type": "number",
+                "description": "The y coordinate of the long press",
+            },
+        },
+        "required": ["x", "y"],
+    },
+}
+
+open_app_func = {
+    "name": "mobile.open_app",
+    "description": "Open an app on the device",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "app_name": {
+                "type": "string",
+                "description": "The name of the app to open",
+            },
+        },
+        "required": ["app_name"],
+    },
+}
+
+AGENT_SYS_MSG = f"""You are a GUI agent. You are given a task and a screenshot of the screen. You need to perform a series of pyautogui actions to complete the task.
+
+You have access to the following functions:
+- {json.dumps(swipe_func)}
+- {json.dumps(home_func)}
+- {json.dumps(back_func)}
+- {json.dumps(wait_func)}
+- {json.dumps(long_press_func)}
+- {json.dumps(open_app_func)}
+"""

@@ -1,0 +1,7 @@
+class: halo2
+params:
+  model_path: ./models/halo2-4b
+  max_new_tokens: 32
+  dtype: float16
+  device_map: auto
+  repo_id: Hcompany/Holo2-4B

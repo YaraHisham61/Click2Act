@@ -2,7 +2,7 @@
 # Model  : Claude Sonnet 4.6
 # Date   : 2026-04-20
 # Prompt : copy grounder.py and create profiling_grounder.py where each step is evaluated
-#          (generation and writing / inside it create new class Halo2Eval where you override
+#          (generation and writing / inside it create new class Holo2Eval where you override
 #          predict_batch to measure time of reading images / preprocessing image /
 #          preprocessing texts / actual generation text / postprocessing)
 """
@@ -18,7 +18,7 @@ from tqdm.auto import tqdm
 from PIL.Image import Image
 
 from src.agents import build_agent
-from src.agents.halo2 import HALO2Agent
+from src.agents.holo2 import HOLO2Agent
 from src.agents.base import AgentOutput
 from src.benchmarks import build_benchmark
 
@@ -46,8 +46,8 @@ class StepTimer:
         return pd.DataFrame(rows)
 
 
-class Halo2Eval(HALO2Agent):
-    """HALO2Agent with per-step timing instrumentation in predict_click_batch."""
+class Holo2Eval(HOLO2Agent):
+    """HOLO2Agent with per-step timing instrumentation in predict_click_batch."""
 
     def __init__(self, config: dict):
         super().__init__(config)
@@ -94,16 +94,16 @@ class Halo2Eval(HALO2Agent):
 
     def print_timing_summary(self):
         df = self.timer.summary()
-        logger.info("\n=== Halo2Eval Timing Summary ===\n" + df.to_string(index=False))
+        logger.info("\n=== Holo2Eval Timing Summary ===\n" + df.to_string(index=False))
 
 
 def main(config: dict):
     agent_config     = yaml.safe_load(Path(config["agent"]).read_text())
     benchmark_config = yaml.safe_load(Path(config["benchmark"]).read_text())
 
-    # force use of Halo2Eval regardless of what the config says
-    agent_config["class"] = "Halo2Eval"
-    agent = Halo2Eval(agent_config)
+    # force use of Holo2EHolo2Evalval regardless of what the config says
+    agent_config["class"] = "Holo2Eval"
+    agent = Holo2Eval(agent_config)
     agent.load()
 
     benchmark = build_benchmark(benchmark_config)
@@ -133,7 +133,7 @@ def main(config: dict):
         samples = [benchmark.get_sample(i) for i in range(batch_start, batch_end)]
         batch_timer.record("read_samples", time.perf_counter() - t0)
 
-        # ── predict (internally timed by Halo2Eval) ───────────────────────────
+        # ── predict (internally timed by Holo2Eval) ───────────────────────────
         t0 = time.perf_counter()
         outputs = agent.predict_click_batch([(s.screenshot, s.task) for s in samples])
         batch_timer.record("predict_batch_wall", time.perf_counter() - t0)
