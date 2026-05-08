@@ -1,0 +1,6 @@
+class: androidcontrol
+params:
+  benchmark_path: /kaggle/input/datasets/aliaagheis/android-control/data
+  extracted_path: /kaggle/input/datasets/aliaagheis/android-control/data
+  repo_id: aliaagheis/android-control
+  

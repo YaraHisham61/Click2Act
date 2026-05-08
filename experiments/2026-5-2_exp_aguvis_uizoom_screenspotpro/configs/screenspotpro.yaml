@@ -1,0 +1,5 @@
+class: screenspotpro
+params:
+  benchmark_path: /kaggle/input/datasets/aliaagheis/screenspot-pro
+  repo_id: likaixin/ScreenSpot-Pro
+  sort_by_img_size: asc # asc | desc | null

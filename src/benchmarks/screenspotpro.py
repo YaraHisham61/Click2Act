@@ -5,6 +5,7 @@ from src.constants import DATA_PATH
 import json
 from PIL import Image
 from pathlib import Path
+from loguru import logger
 from huggingface_hub import snapshot_download
 
 
@@ -42,7 +43,8 @@ class ScreenSpotProBenchmark(Benchmark):
             self.samples.sort(key=lambda x: x['img_size'][0]*x['img_size'][1])
         elif self.config['sort_by_img_size'] == 'desc':
             self.samples.sort(key=lambda x: -1 * x['img_size'][0]*x['img_size'][1])
-     
+
+        logger.info(f"loaded all ScreenSpotPro samples {self.size}")
         
     def get_sample(self, idx: int) -> BenchmarkSample:
         "Return a one sample"

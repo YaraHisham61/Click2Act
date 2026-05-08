@@ -1,11 +1,24 @@
+import tarfile
 import torch
 import numpy as np
 from PIL import Image, ImageDraw
+from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 import numpy as np
 from src.constants import C2A_PALETTE
+
+
+def extract_tar(tar_path: Path, dest_path: Path) -> None:
+    """Extract a tar archive into dest_path, skipping if already extracted."""
+    marker = dest_path / ".extracted"
+    if marker.exists() or not tar_path.exists():
+        return
+    with tarfile.open(tar_path, "r:*") as tar:
+        tar.extractall(dest_path)
+    marker.touch()
+
 
 def get_torch_dtype(dtype: str):
     if dtype == 'float16':
