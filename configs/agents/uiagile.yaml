@@ -1,9 +1,10 @@
 class: uiagile
 params:
   model_path: ./models/UI-AGILE-3B
-  max_new_tokens: 64
-  dtype: float16          # auto-promoted to bfloat16
+  max_new_tokens: 16
+  dtype: float16
   device_map: auto
   repo_id: KDEGroup/UI-AGILE-3B
   thinking: false
-  max_pixels: 1003520     # 784×1280 — fits 14.56GB GPU with bfloat16
+  max_pixels: 1003520
+  quantize: false

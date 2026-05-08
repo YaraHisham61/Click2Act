@@ -11,7 +11,12 @@ from qwen_vl_utils import smart_resize
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForImageTextToText, AutoProcessor, BitsAndBytesConfig
 
+from transformers.generation.logits_process import LogitsProcessor, LogitsProcessorList
 
+class SafeLogitsProcessor(LogitsProcessor):
+    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
+        scores = torch.nan_to_num(scores, nan=-1e4, posinf=-1e4, neginf=-1e4)
+        return scores
 class UIAgileAgent(GUIAgent):
     def __init__(self, config: dict[str, any]) -> None:
         super().__init__(config)
@@ -25,13 +30,9 @@ class UIAgileAgent(GUIAgent):
         self.config.setdefault("quantize", False)
 
         # Qwen2.5-VL overflows with float16 -> promote to bfloat16 unless quantizing
-        raw_dtype = self.config.get("dtype", "bfloat16")
-        if raw_dtype == "float16" and not self.config["quantize"]:
-            logger.warning(
-                "UIAgile: float16 causes NaN/inf overflow in Qwen2.5-VL. "
-                "Overriding dtype to bfloat16."
-            )
-            raw_dtype = "bfloat16"
+        raw_dtype = self.config.get("dtype", "float16")
+        
+        raw_dtype = "float16"
         self.config["dtype"] = raw_dtype
         self.dtype = get_torch_dtype(raw_dtype)
 
@@ -69,6 +70,7 @@ class UIAgileAgent(GUIAgent):
         self.model.eval()
         self.processor = AutoProcessor.from_pretrained(self.model_path)
         self.processor.tokenizer.padding_side = "left"
+        self._safe_logits_processor = LogitsProcessorList([SafeLogitsProcessor()])
 
     def predict_click(self, screenshot: Image, task: str) -> AgentOutput:
         screenshot_processed = self.preprocess(screenshot)
@@ -106,24 +108,52 @@ class UIAgileAgent(GUIAgent):
             )
             texts.append(text)
             all_images.append(screenshot_processed)
-        batch_inputs = self.processor(
-            text=texts, images=all_images, padding=True, return_tensors="pt"
-        )
-        batch_inputs = batch_inputs.to(self.model.device)
-        with torch.inference_mode():
-            generated_ids = self.model.generate(
-                **batch_inputs, max_new_tokens=self.config["max_new_tokens"]
+        try:
+            batch_inputs = self.processor(
+                text=texts, images=all_images, padding=True, return_tensors="pt"
             )
-        generated_ids_trimmed = [
-            out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)
-        ]
-        output_texts = self.processor.batch_decode(
-            generated_ids_trimmed, skip_special_tokens=True
-        )
-        return [
-            self.postprocess_grounding(t.strip(), img.width, img.height)
-            for t, img in zip(output_texts, all_images)
-        ]
+            batch_inputs = batch_inputs.to(self.model.device)
+            with torch.inference_mode():
+                generated_ids = self.model.generate(
+                    **batch_inputs, max_new_tokens=self.config["max_new_tokens"],
+                    logits_processor=self._safe_logits_processor,
+
+                )
+            generated_ids_trimmed = [
+                out[len(inp):] for inp, out in zip(batch_inputs.input_ids, generated_ids)
+            ]
+            output_texts = self.processor.batch_decode(
+                generated_ids_trimmed, skip_special_tokens=True
+            )
+            return [
+                self.postprocess_grounding(t.strip(), img.width, img.height)
+                for t, img in zip(output_texts, all_images)
+            ]
+        except Exception as batch_err:
+            # Batch failed (likely NaN/Inf on one image) — fall back to one-by-one
+            logger.warning(f"UIAgile: batch failed ({batch_err}), retrying one-by-one...")
+            torch.cuda.empty_cache()
+            results = []
+            for img, text in zip(all_images, texts):
+                try:
+                    single_input = self.processor(
+                        text=[text], images=[img], padding=True, return_tensors="pt"
+                    )
+                    single_input = single_input.to(self.model.device)
+                    with torch.inference_mode():
+                        gen_ids = self.model.generate(
+                            **single_input, max_new_tokens=self.config["max_new_tokens"]
+                        )
+                    trimmed = gen_ids[0][single_input.input_ids.shape[1]:]
+                    out_text = self.processor.decode(trimmed, skip_special_tokens=True)
+                    results.append(
+                        self.postprocess_grounding(out_text.strip(), img.width, img.height)
+                    )
+                except Exception as item_err:
+                    logger.error(f"UIAgile: skipping image due to error: {item_err}")
+                    torch.cuda.empty_cache()
+                    results.append(AgentOutput(raw={"content": ""}))  # empty/skipped
+            return results
 
     def preprocess(self, screenshot: Image) -> Image:
         # smart_resize with hard max_pixels cap to prevent OOM on 16GB GPU
@@ -188,3 +218,4 @@ GROUNDING_MSG = (
     'Format: <point x="X" y="Y">t</point>\n\n'
     'Target: {task}'
 )
+
