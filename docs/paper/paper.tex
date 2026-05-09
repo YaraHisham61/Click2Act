@@ -1,0 +1,100 @@
+\documentclass{article}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% \usepackage{icml2025}        % blind review
+\usepackage[accepted]{icml2025} % camera-ready
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{amsthm}
+
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% \usepackage[disable,textsize=tiny]{todonotes}
+\usepackage[textsize=tiny]{todonotes}
+
+% REFINED [old]: "Short Running Title" → [new]: actual short title
+\icmltitlerunning{Where Models Miss: GUI Action Grounding}
+
+\begin{document}
+
+\twocolumn[
+% REFINED [old]: "Paper Title" → [new]: actual paper title
+\icmltitle{Where Models Miss: A Cross-Platform Analysis of GUI Action Grounding}
+
+\icmlsetsymbol{equal}{*}
+
+\begin{icmlauthorlist}
+\icmlauthor{Aliaa Gheis}{equal,inst1}
+\icmlauthor{Menna Abdelbaset}{equal,inst1}
+\icmlauthor{Yara Hisham}{equal,inst1}
+\icmlauthor{Nouran Hany}{equal,inst1}
+\icmlauthor{Sarah Elzayat}{equal,inst1}
+\end{icmlauthorlist}
+
+\icmlaffiliation{inst1}{Computer Engineering Department, Cairo University Faculty of Engineering, Egypt, Cairo}
+
+\icmlcorrespondingauthor{Aliaa Gheis}{aliaagheis@gmail.com}
+
+\icmlkeywords{Vision Language Models, GUI Automation, Grounding}
+
+\vskip 0.3in
+]
+
+\printAffiliationsAndNotice{\icmlEqualContribution}
+
+\begin{abstract}
+%
+\end{abstract}
+
+\section{Introduction}
+
+\section{Related Work}
+
+\section{Method}
+
+\section{Experiments}
+
+\section{Conclusion}
+
+\section*{Acknowledgements}
+
+\section*{Impact Statement}
+
+\bibliography{paper}
+\bibliographystyle{icml2025}
+
+\appendix
+\onecolumn
+\section{Appendix}
+
+\cite{li2025screenspotpro}
+\cite{li2024effects}
+
+\cite{xu2024aguvis}
+
+\cite{hai2025holo2modelfamily}
+
+\cite{tang2026uizoomer}
+
+
+\end{document}
