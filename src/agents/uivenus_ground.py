@@ -103,12 +103,14 @@ class UIVenusGroundAgent(GUIAgent):
         self._dbg(f"predict_click_batch called with batch_size={len(inputs)}")
         messages_batch: list[list[dict[str, any]]] = []
         texts: list[str] = []
+        original_sizes: list[tuple[int, int]] = []
 
         for idx, (screenshot, task) in enumerate(inputs):
             messages = self._get_grounding_messages(screenshot, task)
             text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
             messages_batch.append(messages)
             texts.append(text)
+            original_sizes.append((screenshot.width, screenshot.height))
             self._dbg(
                 f"sample[{idx}] prepared: task_len={len(task)}, image_size=({screenshot.width}x{screenshot.height}), prompt_len={len(text)}"
             )
@@ -157,20 +159,53 @@ class UIVenusGroundAgent(GUIAgent):
         self._dbg(f"resolved dims count={len(dims)} first_dim={dims[0] if dims else None}")
 
         return [
-            self.postprocess_grounding(raw_output=raw_output.strip(), input_dims=dim)
-            for raw_output, dim in zip(output_texts, dims)
+            self.postprocess_grounding(
+                raw_output=raw_output.strip(),
+                input_dims=dim,
+                original_image_size=orig_size
+            )
+            for raw_output, dim, orig_size in zip(output_texts, dims, original_sizes)
         ]
 
-    def postprocess_grounding(self, raw_output: str, input_dims: tuple[float, float]) -> AgentOutput:
+    def postprocess_grounding(
+        self, raw_output: str, input_dims: tuple[float, float],
+        original_image_size: tuple[int, int] | None = None
+    ) -> AgentOutput:
         input_width, input_height = input_dims
-        self._dbg(f"postprocess input_dims=({input_width}, {input_height}) raw_preview={raw_output[:120]}")
+        self._dbg(f"postprocess input_dims=({input_width}, {input_height}), orig_size={original_image_size}, raw_preview={raw_output[:120]}")
 
         try:
             x1, y1, x2, y2 = self._extract_box(raw_output)
-            x1 = x1 / input_width
-            x2 = x2 / input_width
-            y1 = y1 / input_height
-            y2 = y2 / input_height
+            self._dbg(f"parsed box raw=[{x1},{y1},{x2},{y2}]")
+            
+            # REFINED [old]: normalize by input_dims (vision tensor dims) → [new]: use original image dims if available
+            # The model outputs coordinates in the vision tensor space (e.g., 224x112).
+            # To get correct [0,1] normalized coordinates for the original image:
+            # 1. Scale coordinates from vision space to original image space
+            # 2. Normalize by original image dimensions
+            # This ensures the stored coordinates work with the original image size in evaluation.
+            
+            if original_image_size is not None and input_width and input_height:
+                orig_width, orig_height = original_image_size
+                scale_x = orig_width / input_width
+                scale_y = orig_height / input_height
+                # Scale box from vision space to original image space (in pixels)
+                x1_px = x1 * scale_x
+                x2_px = x2 * scale_x
+                y1_px = y1 * scale_y
+                y2_px = y2 * scale_y
+                # Normalize to [0,1] using original image dimensions
+                x1 = x1_px / orig_width
+                x2 = x2_px / orig_width
+                y1 = y1_px / orig_height
+                y2 = y2_px / orig_height
+                self._dbg(f"scaled to orig space: box_px=[{x1_px:.1f},{y1_px:.1f},{x2_px:.1f},{y2_px:.1f}], norm=[{x1:.4f},{y1:.4f},{x2:.4f},{y2:.4f}]")
+            else:
+                # Fallback: normalize by vision tensor dims if original size not available
+                x1 = x1 / input_width
+                x2 = x2 / input_width
+                y1 = y1 / input_height
+                y2 = y2 / input_height
 
             x = max(0.0, min(1.0, (x1 + x2) / 2.0))
             y = max(0.0, min(1.0, (y1 + y2) / 2.0))
