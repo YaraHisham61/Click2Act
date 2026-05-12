@@ -1,7 +1,7 @@
 # Expirement
 
 - **Model**: AGUVIS 7B
-- **Dataset**: Android Control (2988 steps across N episodes)
+- **Dataset**: Android Control (5309 steps across N episodes)
 - **Date**: `2026-05-07`
 
 ## Exclusions
