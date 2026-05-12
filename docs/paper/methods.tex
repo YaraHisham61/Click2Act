@@ -1,0 +1,144 @@
+% Click2Act framework diagram — vertical layout for two-column paper
+% Total width ≈ 5.5 cm → fits comfortably in one column
+
+\definecolor{c2aPrimary}{HTML}{2E86AB}
+\definecolor{c2aSecondary}{HTML}{A23B72}
+\definecolor{c2aTertiary}{HTML}{F18F01}
+\definecolor{c2aNeutral}{HTML}{6C757D}
+\definecolor{c2aSuccess}{HTML}{3BB273}
+\definecolor{c2aText}{HTML}{212529}
+\definecolor{c2aImplText}{HTML}{4A154B} % A deep, highly readable plum color
+\tikzset{
+  fwbox/.style={
+    rectangle, rounded corners=2pt,
+    inner sep=4pt, font=\scriptsize\sffamily,
+    text=c2aText, align=center,
+  },
+  abstract/.style ={fwbox, fill=c2aPrimary!18,   draw=c2aPrimary,   line width=0.7pt, minimum width=1.8cm, minimum height=0.5cm},
+  groupbox/.style ={
+    fwbox, 
+    fill=c2aSecondary!18, 
+    draw=c2aSecondary, 
+    line width=0.7pt, 
+    minimum width=2cm, 
+    text=c2aImplText, 
+    font=\scriptsize\ttfamily\mdseries% Medium font weight in monospace
+  },
+  regbox/.style   ={fwbox, fill=c2aNeutral!15,   draw=c2aNeutral,   line width=0.7pt, minimum width=5.0cm, minimum height=0.5cm},
+  pipeline/.style ={fwbox, fill=c2aTertiary!20,  draw=c2aTertiary,  line width=0.7pt, minimum width=1.8cm, minimum height=0.5cm},
+  config/.style   ={fwbox, fill=c2aNeutral!12,   draw=c2aNeutral,   line width=0.5pt, dashed, minimum width=1.5cm, minimum height=0.45cm},
+  layerlabel/.style={font=\tiny\bfseries\sffamily, text=c2aNeutral},
+  arr/.style  ={-{Stealth[length=4pt]}, c2aNeutral,   line width=0.6pt},
+  inherit/.style={arr, dashed, c2aPrimary},
+  data/.style ={-{Stealth[length=4pt]}, c2aSuccess,   line width=0.6pt},
+}
+
+\centering
+\begin{tikzpicture}[node distance=0.0cm]
+
+% Layer 0 label
+\node[layerlabel] (lbl0) at (0, 0) {Base Classes};
+
+% Row 0: abstract bases
+\node[abstract] (agentBase) at (-1.35, -0.45) {\texttt{GUIAgent}};
+\node[abstract] (benchBase) at ( 1.35, -0.45) {\texttt{Benchmark}};
+
+% Separator
+\draw[c2aNeutral!40, dashed] (-2.8, -0.85) -- (2.8, -0.85);
+
+% Layer 1 label
+\node[layerlabel] at (0, -1.05) {Implementations};
+
+% Row 1: two grouped implementation boxes
+% REFINED [old]: default text color in groupbox → [new]: explicit c2aText text color + improved spacing for visual clarity
+\node[groupbox] (agents) at (-1.35, -2.05) {%
+  \vspace{10pt}%
+  Holo2:4B\\[1pt]
+  Aguvis:7B\\[1pt]
+  UI-Agile:3B\\[1pt]
+  Aguvis+UI-Zoomer%
+};
+\node[groupbox] (benchmarks) at ( 1.35, -2.05) {%
+  AndroidControl\\[1pt]
+  ScreenSpot-Pro%
+};
+
+% Separator
+\draw[c2aNeutral!40, dashed] (-2.8, -3.15) -- (2.8, -3.15);
+
+% Layer 2 label
+\node[layerlabel] at (0, -3.35) {Registry};
+
+% Row 2: registry bar
+\node[regbox] (registry) at (0, -3.85)
+  {\texttt{registry}};
+
+% Separator
+\draw[c2aNeutral!40, dashed] (-2.8, -4.30) -- (2.8, -4.30);
+
+\node[layerlabel] at (0, -4.50)
+  {Execution Scripts};
+
+% YAML config nodes between registry and scripts
+\node[config] (yamlA) at (-1.0, -4.95) {\texttt{agent.yaml}};
+\node[config] (yamlB) at ( 1.0, -4.95) {\texttt{benchmark.yaml}};
+
+% Row 3: pipeline scripts
+\node[pipeline] (grounder) at (-1.35, -5.70) {\texttt{grounder.py}};
+\node[pipeline] (scorer)   at ( 1.35, -5.70) {\texttt{action\_scorer.py}};
+
+% Separator
+\draw[c2aNeutral!40, dashed] (-2.8, -6.15) -- (2.8, -6.15);
+
+% Layer 4 label + output
+\node[layerlabel] at (0, -6.35) {Output};
+
+\node[fwbox,
+  fill=c2aSuccess!18, draw=c2aSuccess, line width=0.7pt,
+  minimum width=3.2cm, minimum height=0.5cm]
+  (csv) at (0, -6.85) {Results CSV};
+
+% ── Edges ────────────────────────────────────────────────────────────────────
+
+% base → implementations
+\draw[inherit] (agentBase.south) -- (agents.north);
+\draw[inherit] (benchBase.south) -- (benchmarks.north);
+
+% implementations → registry
+\draw[arr] (agents.south)  -- (agents.south  |- registry.north);
+\draw[arr] (benchmarks.south) -- (benchmarks.south |- registry.north);
+
+% registry → yaml → pipeline
+\draw[arr] (registry.south -| yamlA.north) -- (yamlA.north);
+\draw[arr] (registry.south -| yamlB.north) -- (yamlB.north);
+% yaml -> pipeline
+\draw[arr] (yamlA.south) -- (grounder.north);
+\draw[arr] (yamlB.south) -- (scorer.north);
+
+% pipeline → csv
+\draw[data] (grounder.south) -- (grounder.south |- csv.north);
+\draw[data] (scorer.south)   -- (scorer.south |- csv.north);
+
+% ── Legend ───────────────────────────────────────────────────────────────────
+\matrix [
+  below=0.40cm of csv,
+  column sep=5pt, row sep=2pt,
+  matrix of nodes,
+  nodes={font=\tiny\sffamily, text=c2aText, inner sep=1pt},
+] {
+  \tikz\node[abstract, minimum width=0.35cm, minimum height=0.20cm]{}; &
+    Base class &[3pt]
+  \tikz\node[groupbox, minimum width=0.35cm, minimum height=0.20cm]{}; &
+    Impl. &[3pt]
+  \tikz\node[regbox,   minimum width=0.35cm, minimum height=0.20cm]{}; &
+    Registry \\
+  \tikz\node[pipeline, minimum width=0.35cm, minimum height=0.20cm]{}; &
+    Script &[3pt]
+  \tikz\node[config,   minimum width=0.35cm, minimum height=0.20cm]{}; &
+    YAML config &[3pt]
+  \tikz\node[fwbox, fill=c2aSuccess!18, draw=c2aSuccess, line width=0.7pt,
+             minimum width=0.35cm, minimum height=0.20cm]{}; &
+    Output \\
+};
+
+\end{tikzpicture}

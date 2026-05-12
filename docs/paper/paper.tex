@@ -32,6 +32,11 @@
 % \usepackage[disable,textsize=tiny]{todonotes}
 \usepackage[textsize=tiny]{todonotes}
 
+% TikZ for framework diagram
+\usepackage{tikz}
+\usepackage{tikz-cd}
+\usetikzlibrary{arrows.meta,positioning,matrix,fit,backgrounds}
+
 % REFINED [old]: "Short Running Title" → [new]: actual short title
 \icmltitlerunning{Where Models Miss: GUI Action Grounding}
 
@@ -70,11 +75,71 @@
 
 \section{Related Work}
 
+% ==========================================================
+% ==========================================================
+% Methods
+% ==========================================================
+% ==========================================================
 \section{Method}
+
+Click2Act is an open, extendable evaluation framework for GUI agents. it supports two evaluation modes ---point grounding and action prediction--- and is designed to be modular: new agents and benchmarks are registered independently and paired at runtime via YAML configuration files as illustrated in Figure~\ref{fig:framework}.
+
+\begin{figure}[t]
+    \centering
+    \input{methods}
+    \caption{%
+        \textbf{Click2Act framework overview.}
+        Abstract base classes (\texttt{GUIAgent}, \texttt{Benchmark}) are subclassed
+        by concrete implementations and resolved at runtime via a registry.
+        Each execution script receives an \texttt{agent.yaml} and a
+        \texttt{benchmark.yaml}, runs inference over benchmark samples, and writes
+        results to a CSV for offline analysis.
+        Dashed arrows = inheritance; solid arrows = data flow.
+    }
+    \label{fig:framework}
+\end{figure}
+
+\subsection{Evaluated Models}
+
+We evaluate four small pure-vision VLMs, all used with  no additional fine-tuning. Table~\ref{tab:models} summarizes each model.
+\begin{table}[h]
+    \centering
+    \caption{Models evaluated in this study.}
+    \label{tab:models}
+    \begin{tabular}{lc}
+    \toprule
+    \textbf{Model} & \textbf{Params} \\
+    \midrule
+    UI-AGILE-3B      & 3B \\
+    Holo2-4B         & 4B \\
+    AGUVIS-7B        & 7B \\
+    AGUVIS+UI-Zoomer & 7B \\
+    \bottomrule
+    \end{tabular}
+    \end{table}
+    
+\noindent
+All evaluated models fall in the 3B--7B parameter range, targeting practical deployment on consumer devices like laptops and workstations without cloud infrastructure. Despite this appeal, how much accuracy they sacrifice compared to flagships such as UI-Venus-1.5-30B-A3B ~\cite{uivenus15} and
+Holo2-235B-A22B~\cite{holo2}, and where exactly they fail, remains an open question.
+
+\textbf{AGUVIS-7B}~\cite{aguvis} is a fully open-source autonomous GUI agent built on Qwen2-VL that supports all platforms. It operates in two stages: (1) a planning stage where the model generates a structured \textit{inner monologue} ---consisting of a textual description of the current screen, internal reasoning toward the high-level goal, and low-level action instructions---, and (2) a grounding stage where the inner monologue is translated into executable actions. It was one of the first small fully open-source vision-based GUI agents to demonstrate competitive performance on ScreenSpot.
+
+\textbf{Holo2-4B}~\cite{holo2} is a fully open-source autonomous GUI agent built on Qwen3-VL that supports all platforms. It is trained in two stages: (1) a large-scale supervised fine-tuning (SFT) stage on screen localization and element grounding, and (2) an online reinforcement learning stage using Group Relative Policy Optimization (GRPO) to refine its multi-step reasoning and navigation policies.
+
+\textbf{UI-Agile-7B}
+
+\textbf{AGUVIS+UI-Zoomer}
+
+\subsection{Expirmented Benchmarks}
+\subsection{Evaluation Metrics}
+
+
 
 \section{Experiments}
 
 \section{Conclusion}
+
+
 
 \section*{Acknowledgements}
 
@@ -82,19 +147,13 @@
 
 \bibliography{paper}
 \bibliographystyle{icml2025}
-
+\cite{aguvis}
+\cite{li2024effects}
 \appendix
 \onecolumn
 \section{Appendix}
 
-\cite{li2025screenspotpro}
-\cite{li2024effects}
 
-\cite{xu2024aguvis}
-
-\cite{hai2025holo2modelfamily}
-
-\cite{tang2026uizoomer}
 
 
 \end{document}
