@@ -2,29 +2,63 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\citation{uivenus15}
 \citation{holo2}
+\citation{uivenus15}
+\citation{qin2025ui}
+\citation{zhou2025venusbenchgdcomprehensivemultiplatformgui}
+\citation{gou2024uground}
 \citation{aguvis}
 \citation{holo2}
-\newlabel{tab:models}{{1}{1}{Models evaluated in this study}{table.1}{}}
-\newlabel{tab:models@cref}{{[table][1][]1}{[1][1][]1}}
-\newlabel{fig:framework}{{1}{1}{\textbf {Click2Act framework overview.} Abstract base classes (\texttt {GUIAgent}, \texttt {Benchmark}) are subclassed by concrete implementations and resolved at runtime via a registry. Each execution script receives an \texttt {agent.yaml} and a \texttt {benchmark.yaml}, runs inference over benchmark samples, and writes results to a CSV for offline analysis. Dashed arrows = inheritance; solid arrows = data flow}{figure.1}{}}
-\newlabel{fig:framework@cref}{{[figure][1][]1}{[1][1][]1}}
 \citation{uiagile}
 \citation{uizoomer}
 \citation{li2025screenspotpro}
 \citation{androidcontrol}
-\bibdata{paper}
-\bibcite{holo2}{{1}{2025}{{Company}}{{}}}
-\bibcite{li2025screenspotpro}{{2}{2025}{{Li et~al.}}{{Li, Ziyang, Lin, Luo, Tian, Ma, Huang, and Chua}}}
-\bibcite{androidcontrol}{{3}{2024}{{Li et~al.}}{{Li, Bishop, Li, Rawles, Campbell-Ajala, Tyamagundlu, and Riva}}}
-\bibcite{uiagile}{{4}{2025}{{Lian et~al.}}{{Lian, Wu, Ma, Song, Chen, Zheng, and Li}}}
-\bibcite{uizoomer}{{5}{2026}{{Tang et~al.}}{{Tang, Chen, Lu, Chen, Nong, Jiang, Xu, Lu, Xiao, Zhuang, and Shen}}}
-\bibcite{uivenus15}{{6}{2026}{{Venus-Team et~al.}}{{Venus-Team, Gao, Gu, Liu, Qiu, Shen, Wen, Xia, Xu, Zeng, Zhou, Zhou, Chen, Dai, Dou, Gong, Guo, Guo, Li, Li, Lin, Zhou, Zhu, Chen, Guo, Meng, and Wang}}}
-\bibcite{aguvis}{{7}{2024}{{Xu et~al.}}{{Xu, Wang, Wang, Lu, Xie, Saha, Sahoo, Yu, and Xiong}}}
-\bibstyle{icml2025}
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:teaser}{{1}{1}{\textbf {The small-model accuracy gap on ScreenSpot-Pro.} Frontier models (gray circles, 72B--235B) clear 70\%. The small open models we study (colored stars, 3B--7B) leave 35--65 points of headroom; even the best, Holo2-4B, lags the frontier by ${\sim }35$ points. Click2Act dissects where this gap originates. Frontier numbers are illustrative; see Table~\ref {tab:results} for measured small-model values}{figure.caption.1}{}}
+\newlabel{fig:teaser@cref}{{[figure][1][]1}{[1][1][]1}}
 \citation{aguvis}
-\citation{li2024effects}
-\newlabel{fig:screenspot-distribution}{{2}{3}{ScreenSpot-Pro sample distribution across applications and UI element types. Text targets outnumber icon targets in most applications}{figure.2}{}}
-\newlabel{fig:screenspot-distribution@cref}{{[figure][2][]2}{[1][2][]3}}
-\gdef \@abspage@last{4}
+\citation{wutetal2024osatlas}
+\citation{chengetal2024seeclick}
+\citation{gou2024uground}
+\citation{holo2}
+\citation{uiagile}
+\citation{uizoomer}
+\citation{androidcontrol}
+\citation{li2025screenspotpro}
+\citation{uivenus15}
+\citation{holo2}
+\citation{aguvis}
+\newlabel{fig:framework}{{2}{2}{\textbf {Click2Act framework overview.} Base classes (\texttt {GUIAgent}, \texttt {Benchmark}) are dynamically subclassed via a registry. Scripts load YAML configs to run inference and log CSV results. Legend: dashed (inheritance), solid (data flow)}{figure.caption.2}{}}
+\newlabel{fig:framework@cref}{{[figure][2][]2}{[1][2][]2}}
+\citation{holo2}
+\citation{uiagile}
+\citation{uizoomer}
+\citation{li2025screenspotpro}
+\citation{androidcontrol}
+\newlabel{tab:models}{{1}{3}{Models evaluated in this study}{table.caption.3}{}}
+\newlabel{tab:models@cref}{{[table][1][]1}{[1][2][]3}}
+\newlabel{tab:results}{{2}{4}{ScreenSpot Pro hit rate}{table.caption.4}{}}
+\newlabel{tab:results@cref}{{[table][2][]2}{[1][4][]4}}
+\newlabel{tab:quantization}{{3}{4}{Effect of 4-bit quantization on UI-AGILE-3B accuracy (\%) on the first 78 samples of ScreenSpot Pro}{table.caption.5}{}}
+\newlabel{tab:quantization@cref}{{[table][3][]3}{[1][4][]4}}
+\newlabel{tab:androidcontrol}{{4}{4}{Hit rate (\%) on AndroidControl. Sample sizes differ between models}{table.caption.6}{}}
+\newlabel{tab:androidcontrol@cref}{{[table][4][]4}{[1][4][]4}}
+\newlabel{tab:accuracy}{{5}{4}{Accuracy at varying coordinate thresholds $\delta $}{table.caption.7}{}}
+\newlabel{tab:accuracy@cref}{{[table][5][]5}{[1][4][]4}}
+\bibdata{paper}
+\bibcite{chengetal2024seeclick}{{1}{2024}{{Cheng et~al.}}{{Cheng, Sun, Chu, Xu, Li, Zhang, and Wu}}}
+\bibcite{holo2}{{2}{2025}{{Company}}{{}}}
+\bibcite{gou2024uground}{{3}{2025}{{Gou et~al.}}{{Gou, Wang, Zheng, Xie, Chang, Shu, Sun, and Su}}}
+\bibcite{li2025screenspotpro}{{4}{2025}{{Li et~al.}}{{Li, Ziyang, Lin, Luo, Tian, Ma, Huang, and Chua}}}
+\bibcite{androidcontrol}{{5}{2024}{{Li et~al.}}{{Li, Bishop, Li, Rawles, Campbell-Ajala, Tyamagundlu, and Riva}}}
+\bibcite{uiagile}{{6}{2025}{{Lian et~al.}}{{Lian, Wu, Ma, Song, Chen, Zheng, and Li}}}
+\bibcite{qin2025ui}{{7}{2025}{{Qin et~al.}}{{Qin, Ye, Fang, Wang, Liang, Tian, Zhang, Li, Li, Huang, et~al.}}}
+\bibcite{uizoomer}{{8}{2026}{{Tang et~al.}}{{Tang, Chen, Lu, Chen, Nong, Jiang, Xu, Lu, Xiao, Zhuang, and Shen}}}
+\bibcite{uivenus15}{{9}{2026}{{Venus-Team et~al.}}{{Venus-Team, Gao, Gu, Liu, Qiu, Shen, Wen, Xia, Xu, Zeng, Zhou, Zhou, Chen, Dai, Dou, Gong, Guo, Guo, Li, Li, Lin, Zhou, Zhu, Chen, Guo, Meng, and Wang}}}
+\bibcite{wutetal2024osatlas}{{10}{2024}{{Wu et~al.}}{{Wu, Wu, Xu, Wang, Sun, Jia, Cheng, Ding, Chen, Liang, and Qiao}}}
+\newlabel{tab:uizoomer-breakdown}{{6}{5}{Performance decomposition of the UI-Zoomer pipeline on ScreenSpot-Pro}{table.caption.8}{}}
+\newlabel{tab:uizoomer-breakdown@cref}{{[table][6][]6}{[1][5][]5}}
+\bibcite{aguvis}{{11}{2024}{{Xu et~al.}}{{Xu, Wang, Wang, Lu, Xie, Saha, Sahoo, Yu, and Xiong}}}
+\bibcite{zhou2025venusbenchgdcomprehensivemultiplatformgui}{{12}{2025}{{Zhou et~al.}}{{Zhou, Huang, Guo, Gu, Xia, Luo, Tang, Kong, Shang, Ou, Guo, Meng, and Shen}}}
+\bibstyle{icml2025}
+\gdef \@abspage@last{6}

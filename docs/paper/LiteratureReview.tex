@@ -1,0 +1,27 @@
+% Related-work fragment: \input after \section{Related Work}.
+
+Multimodal large language models (MLLMs) are often the base model behind GUI agents, and benchmarks now focus more on multi-step agent tasks than on single-turn question answering.
+GUI grounding means mapping language to the right on-screen control.
+Recent work compares grounding and actions on desktop and mobile, not just in small lab demos.
+
+\subsection{Evolution of GUI agent architectures}
+
+Much of the literature groups progress into three lines: supervised fine-tuning (SFT), reinforcement learning (RL), and light-weight changes at inference time.
+
+\noindent\textit{Supervised fine-tuning.}
+AGUVIS-7B~\cite{aguvis} uses two phases: planning with a structured inner monologue, then grounding those steps into actions.
+OS-Atlas~\cite{wutetal2024osatlas}, SeeClick~\cite{chengetal2024seeclick}, and UGround~\cite{gou2024uground} train for shared visual grounding so one model can cover many apps and OS layouts.
+
+\noindent\textit{Reinforcement learning.}
+Holo2-4B~\cite{holo2} adds an RL stage with Group Relative Policy Optimization (GRPO) to tighten multi-step navigation.
+UI-Agile-3B~\cite{uiagile} uses a smooth reward for near-miss clicks and crop-based resampling that zooms the screenshot so hard training pairs stay useful without increasing the network.
+
+\noindent\textit{Inference-time augmentation.}
+UI-Zoomer~\cite{uizoomer} runs an extra, zoomed forward pass when the model is unsure where to click, in order to achieve sharper boxes on dense screens without retraining the base weights.
+
+\subsection{Benchmarking and saturation}
+
+The evaluation of these agents reveals a historical divergence between mobile and desktop research. Earlier benchmarks often specialized in a single platform, such as Android Control~\cite{androidcontrol} for mobile GUI datasets. This specialization limits applicability to broader user interactive scenarios and fails to reflect the cross-platform generalization needed for everyday user tasks. Our study addresses this literature gap by conducting a cross-platform analysis that integrates evaluations across desktop and mobile environments.
+
+Furthermore, as models achieve high accuracy on standard datasets, there is a shifting need toward more challenging environments. ScreenSpot-Pro~\cite{li2025screenspotpro} targets professional desktop applications where tool-rich, high resolutional screenshots provide a strong discriminator between models.
+

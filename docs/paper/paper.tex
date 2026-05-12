@@ -1,5 +1,5 @@
 \documentclass{article}
-
+\usepackage{caption}
 \usepackage{microtype}
 \usepackage{graphicx}
 \usepackage{subfigure}
@@ -35,7 +35,8 @@
 % TikZ for framework diagram
 \usepackage{tikz}
 \usepackage{tikz-cd}
-\usetikzlibrary{arrows.meta,positioning,matrix,fit,backgrounds}
+% REFINED [old]: \usetikzlibrary{arrows.meta,positioning,matrix,fit,backgrounds} → [new]: + shapes.geometric (star nodes in teaser.tex)
+\usetikzlibrary{arrows.meta,positioning,matrix,fit,backgrounds,shapes.geometric}
 
 % REFINED [old]: "Short Running Title" → [new]: actual short title
 \icmltitlerunning{Where Models Miss: GUI Action Grounding}
@@ -68,12 +69,44 @@
 \printAffiliationsAndNotice{\icmlEqualContribution}
 
 \begin{abstract}
-%
+    Large vision-language models (VLMs) achieve strong GUI grounding but require
+    dedicated accelerators, making real-time deployment impractical. Small models
+    (3B--7B) offer a practical alternative, yet their failure modes and capability
+    limits on GUI grounding tasks remain poorly understood. We present Click2Act,
+    an open evaluation framework for GUI grounding, and use it to systematically
+    evaluate four small pure-vision VLMs AGUVIS-7B, Holo2-4B, UI-AGILE-3B, and
+    AGUVIS-7B augmented with UI-Zoomer across two benchmarks: ScreenSpot-Pro for
+    desktop grounding and AndroidControl for mobile action prediction. Our analysis
+    reveals that coordinate precision, not action type classification, is the
+    universal bottleneck at this scale: small models reach at most 40.5% on
+    ScreenSpot-Pro compared to over 70% for frontier models. Inference-time
+    augmentation via UI-Zoomer improves AGUVIS-7B by 3.84 percentage points without
+    any additional training, suggesting that adaptive zoom is a viable direction for
+    bridging the accuracy gap without scaling model size.
 \end{abstract}
 
 \section{Introduction}
 
+The Graphical User Interface (GUI) is the gateway for human interaction in any application, so the need for GUI agents has gained increasing attention in recent years. Recently, GUI agents have been powered by Vision Language Models (VLMs), enabling stronger screen comprehension and accurate element localization. Large models such as \textbf{Holo2-235B}~\cite{holo2}, \textbf{UI-Venus-72B}~\cite{uivenus15}, and \textbf{UI-TARS-72B}~\cite{qin2025ui} now score over 75% on grounding benchmarks. Still, these models are impractical for real-time deployment, demanding dedicated accelerator hardware and incurring prohibitive per-query inference costs. \par
+
+Prior evaluation efforts have focused on establishing state-of-the-art performance, primarily analyzing large-model regimes. \textbf{VenusBench-GD}~\cite{zhou2025venusbenchgdcomprehensivemultiplatformgui} evaluates 20+ models but centers its analysis on large frontier models. Similarly, \textbf{UGround}~\cite{gou2024uground} demonstrates universal grounding capabilities across 7B to 72B scales, yet no systematic study examines the 3B to 7B regime. Where exactly small models fail, whether their error modes differ qualitatively from those of large models, and whether inference-time strategies can compensate for their reduced capacity remain open questions. \par
+\begin{figure}[t]
+    \centering
+    \input{teaser}
+    \caption{%
+        \textbf{The small-model accuracy gap on ScreenSpot-Pro.}
+        Frontier models (gray circles, 72B--235B) clear 70\%. The small open models we study (colored stars, 3B--7B) leave 35--65 points of headroom; even the best, Holo2-4B, lags the frontier by ${\sim}35$ points. Click2Act dissects where this gap originates. Frontier numbers are illustrative; see Table~\ref{tab:results} for measured small-model values.
+    }
+    \label{fig:teaser}
+    \vspace{-1em}
+\end{figure}
+
+In this paper, we present Click2Act\footnote{\url{https://github.com/YaraHisham61/Click2Act}}, an open evaluation framework for GUI grounding, and use it to conduct a systematic evaluation of four small GUI agents: \textbf{AGUVIS-7B}~\cite{aguvis}, \textbf{Holo2-4B}~\cite{holo2}, \textbf{UI-Agile-3B}~\cite{uiagile}, \textbf{AGUVIS + UI-Zoomer} AGUVIS-7B augmented with UI-Zoomer~\cite{uizoomer}. We evaluate across two domains, the desktop domain using \textbf{ScreenSpot-Pro}~\cite{li2025screenspotpro} and the mobile domain using \textbf{Android Control}~\cite{androidcontrol}, providing per-model failure taxonomies, efficiency profiling, and a study of the effect of the UI-Zoomer component.\par
+
+Our contributions are: (1) Click2Act, an extensible open-source framework supporting pluggable agents, benchmarks, and YAML-based configuration; (2) the first in-depth analysis of the small-model (3B--7B) regime for GUI grounding; (3) a quantitative efficiency-accuracy tradeoff analysis that clarifies what users sacrifice by choosing small models; and (4) an evaluation of UI-Zoomer as an inference-time augmentation, assessing whether adaptive zoom can help bridge the performance gap for small models.
+
 \section{Related Work}
+\input LiteratureReview.tex
 
 % ==========================================================
 % ==========================================================
@@ -84,21 +117,15 @@
 
 Click2Act is an open, extendable evaluation framework for GUI agents. it supports two evaluation modes ---point grounding and action prediction--- and is designed to be modular: new agents and benchmarks are registered independently and paired at runtime via YAML configuration files as illustrated in Figure~\ref{fig:framework}.
 
-\begin{figure}[t]
+\begin{figure}[h]
     \centering
     \input{methods}
     \caption{%
-        \textbf{Click2Act framework overview.}
-        Abstract base classes (\texttt{GUIAgent}, \texttt{Benchmark}) are subclassed
-        by concrete implementations and resolved at runtime via a registry.
-        Each execution script receives an \texttt{agent.yaml} and a
-        \texttt{benchmark.yaml}, runs inference over benchmark samples, and writes
-        results to a CSV for offline analysis.
-        Dashed arrows = inheritance; solid arrows = data flow.
+        \textbf{Click2Act framework overview.} Base classes (\texttt{GUIAgent}, \texttt{Benchmark}) are dynamically subclassed via a registry. Scripts load YAML configs to run inference and log CSV results. Legend: dashed (inheritance), solid (data flow).
     }
     \label{fig:framework}
 \end{figure}
-
+% ================================== Evaluated Models =====================================
 \subsection{Evaluated Models}
 
 We evaluate four small pure-vision VLMs, all used with  no additional fine-tuning. Table~\ref{tab:models} summarizes each model.
@@ -107,17 +134,17 @@ We evaluate four small pure-vision VLMs, all used with  no additional fine-tunin
     \caption{Models evaluated in this study.}
     \label{tab:models}
     \begin{tabular}{lc}
-    \toprule
-    \textbf{Model} & \textbf{Params} \\
-    \midrule
-    UI-AGILE-3B      & 3B \\
-    Holo2-4B         & 4B \\
-    AGUVIS-7B        & 7B \\
-    AGUVIS+UI-Zoomer & 7B \\
-    \bottomrule
+        \toprule
+        \textbf{Model} & \textbf{Params} \\
+        \midrule
+        UI-AGILE-3B      & 3B \\
+        Holo2-4B         & 4B \\
+        AGUVIS-7B        & 7B \\
+        AGUVIS+UI-Zoomer & 7B \\
+        \bottomrule
     \end{tabular}
-    \end{table}
-    
+\end{table}
+
 \noindent
 All evaluated models fall in the 3B--7B parameter range, targeting practical deployment on consumer devices like laptops and workstations without cloud infrastructure. Despite this appeal, how much accuracy they sacrifice compared to flagships such as UI-Venus-1.5-30B-A3B ~\cite{uivenus15} and
 Holo2-235B-A22B~\cite{holo2}, and where exactly they fail, remains an open question.
@@ -128,31 +155,24 @@ Holo2-235B-A22B~\cite{holo2}, and where exactly they fail, remains an open quest
 
 \textbf{UI-Agile-3B}~\cite{uiagile} is a fully open-source GUI grounding agent built on Qwen2.5-VL-3B. It is aiming at improving both the reinforcement fine tuning and the inference stages of GUI agents. their contibution are in three main points:firstly, UI-Agile applies simple thinking strategy that encourages thoughts within an "ideal range" of length, secondly, UI-Agile provides a continuous reward function that treats a click on the very edge of a button the same as a click in the center, thirdly, UI-Agile applies a cropping-based resampling strategy that dynamically adjusts the difficulty by cropping (zooming in) on the original screenshot.
 
-\textbf{AGUVIS + UI-Zoomer} we augments AGUVIS-7B with UI-Zoomer~\cite{uizoomer}, an inference-time post-processing technique that requires no retraining. When the model's localization confidence is low, UI-Zoomer crops and zooms into predicted region, adding an extra forward pass only when needed. We pair UI-Zoomer to test whether inference-time augmentation can close the accuracy gap without increasing model size.
+
+\textbf{AGUVIS + UI-Zoomer.} We pair AGUVIS with UI-Zoomer\cite{uizoomer} to investigate whether inference-time augmentation alone can close the accuracy gap with larger models, without increasing model size or requiring additional training. UI-Zoomer runs in two stages. In the first stage, the model samples $N$ candidate coordinate predictions and computes a confidence score $c = C_{\text{tokens}} + C_{\text{spatial}}$. The token confidence averages the geometric-mean token probability across samples: $$ C_{\text{tokens}} = \frac{1}{N}\sum_{j=1}^{N} \exp!\Bigl(\frac{1}{L_j}\sum_{i=1}^{L_j} \log p_i^{(j)}\Bigr) $$ where $L_j$ is the number of non-template tokens in sample $j$. The original UI-Zoomer defines spatial consensus over bounding boxes as the mean pairwise IoU: $$ C_{\text{spatial}} = \frac{1}{N(N-1)}\sum_{i \neq j} \text{IoU}(\mathbf{b}_i, \mathbf{b}_j) $$ Since AGUVIS produces point predictions rather than bounding boxes, we reformulate spatial consensus by treating each predicted point $\mathbf{p}_j$ as the mean of an isotropic Gaussian with standard deviation $\sigma = r \cdot \max(W, H)$, where $r = 0.02$. Under this assumption, the overlap between two point predictions is naturally captured by the joint probability $P(\mathbf{p}_i, \mathbf{p}_j)$, which yields a Gaussian kernel as an analog to IoU: $$ C{_\text{spatial}} = \frac{1}{N(N-1)}\sum{i \neq j} \exp!\Bigl(-\frac{|\mathbf{p}_i - \mathbf{p}_j|^2}{2\sigma^2}\Bigr) $$ 
+
+The best candidate is then selected via consensus voting: each candidate accumulates votes from peers whose predictions are spatially close, and the candidate with the most support is chosen, with token confidence as a tiebreaker. In the original UI-Zoomer, a vote is cast when $\text{IoU}(\mathbf{b}_i, \mathbf{b}j) > 0.5$; we replace this with a distance threshold under our Gaussian formulation, giving $v_i = \sum{j \neq i} \mathbb{I}[|\mathbf{p}_i - \mathbf{p}_j| < \sigma]$, and select $i^* = \arg\max_i (v_i,; c_i)$.
+
+If $c \geq \tau$ (we use $\tau = 0.65$), the voted point is returned directly. Otherwise, the second stage applies adaptive cropping: outlier points are removed by retaining the closest 75\% to the centroid, and a square crop of side $s = \max(2\gamma\sigma_x, 2\gamma\sigma_y, m)$ is centered on the filtered mean, where $\gamma = 2.5$ is a scale factor and $m = 256$ is the minimum crop side. The crop is shifted rather than clipped to remain within image bounds. The model then re-predicts on the cropped region, and the output coordinate is mapped back via $x_{\text{pred}} = x_{\text{crop}} \cdot w_c + x_0$.
+
+
+% ================================== Expirmented Benchmarks =====================================
 
 \subsection{Expirmented Benchmarks}
 
-\textbf{ScreenSpot-Pro}~\cite{li2025screenspotpro} is a static GUI grounding benchmark
-targeting high-resolution desktop screenshots, with 1{,}580 samples distributed across
-26 professional applications on Linux, macOS, and Windows. State-of-the-art models have not yet saturated its leaderboard, making it a strong discriminator between models. Each sample pairs a screenshot with
-a low-level instruction and a ground-truth bounding box. Figure~\ref{fig:screenspot-distribution} shows the distribution of samples across
-applications and UI element types. Text targets outnumber icon targets in most
-applications, with the gap being especially large in domain-specific tools such as
-\texttt{matlab}, \texttt{solidworks} and \texttt{word}.
+\textbf{ScreenSpot-Pro}~\cite{li2025screenspotpro} is a static GUI grounding benchmark targeting high-resolution desktop screenshots, with 1{,}580 samples distributed across 26 professional applications on Linux, macOS, and Windows. State-of-the-art models have not yet saturated its leaderboard, making it a strong discriminator between models. Each sample pairs a screenshot with a low-level instruction and a ground-truth bounding box. Where, the text targets outnumber icon targets in most applications, with the gap being especially large in domain-specific tools such as \texttt{matlab}, \texttt{solidworks} and \texttt{word}.
 
-\begin{figure*}[t]
-    \centering
-    \includegraphics[width=\textwidth]{imgs/screenspot-distribution.pdf}
-    \caption{ScreenSpot-Pro sample distribution across applications and UI element
-    types. Text targets outnumber icon targets in most applications.}
-    \label{fig:screenspot-distribution}
-\end{figure*}
 
-\textbf{Android Control}~\cite{androidcontrol} is a mobile GUI dataset. We evaluate on
-a subset of episodes from its test set, where each episode consists of a high-level
-goal and multiple steps. Each step pairs a screenshot and a low-level instruction with
-a ground-truth action (action type, coordinate, text, and scroll direction).
+\textbf{Android Control}~\cite{androidcontrol} is a mobile GUI dataset. We evaluate on a subset of episodes from its test set, where each episode consists of a high-level goal and multiple steps. Each step pairs a screenshot and a low-level instruction with a ground-truth action (action type, coordinate, text, and scroll direction).
 
+% ================================== Evaluation Metrics =====================================
 
 \subsection{Evaluation Metrics}
 
@@ -163,25 +183,188 @@ where $(x^*, y^*)$ is the ground-truth coordinate. We report results at $\tau \i
 
 \textbf{Component-level accuracy} decomposes step accuracy into component scores (action type, coordinate, text, direction), enabling identification of which prediction components are responsible for failures.
 
+
+
+% ==========================================================
+% ==========================================================
+% Expirments
+% ==========================================================
+% ==========================================================
 \section{Experiments}
+All experiments of AGUVIS and UI-Agile were conducted on Kaggle using T4x2 GPUs. Experiments of HOLO2 were conducted on Modal using NVIDIA A10G 24G GPUs. All models were evaluated with no additional fine-tuning, using the inference configurations specified in their respective YAML files. Images entered into the models were preprocessed using smart resize. 
+
+\subsection{ScreenSpot-Pro Results}
+We used hit rate as our evaluation metric (shown in Table 2), defined as the success rate of the model when its prediction falls within the bounding box coordinates.
+\begin{table}[h]
+    \centering
+    \caption{ScreenSpot Pro hit rate}
+    \label{tab:results}
+    \begin{tabular}{lc}
+    \toprule
+    \textbf{Model} & \textbf{Accuracy (\%)} \\
+    \midrule
+    UI-AGILE-3B              & 12.71 \\
+    AGUVIS-7B                & 21.07 \\
+    AGUVIS + UI-Zoomer       & 24.91 \\
+    Holo2-4B                 & 40.54 \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+
+Table~\ref{tab:quantization} reports the effect of 4-bit quantization on
+UI-AGILE-3B, evaluated on the first 78 samples of ScreenSpot-Pro. Applying INT4
+quantization via \texttt{bitsandbytes} reduces accuracy from 7.69\% to 5.13\%,
+a drop of 2.56 percentage points, while providing no measurable reduction in
+inference latency. The bottleneck in UI-AGILE-3B lies in activation memory rather than weight memory: quantizing weights to 4-bit reduces the model size on disk, but provides no improvement in inference latency when processing images.
+
+\begin{table}[H]
+    \centering
+    \caption{Effect of 4-bit quantization on UI-AGILE-3B accuracy (\%) on the first 78 samples of ScreenSpot Pro.}
+    \label{tab:quantization}
+    \begin{tabular}{lc}
+    \toprule
+    \textbf{Configuration} & \textbf{Accuracy (\%)} \\
+    \midrule
+    UI-AGILE-3B (BF16)       & 7.69 \\
+    UI-AGILE-3B (INT4)        & 5.13 \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsection{AndroidControl Results:}
+We evaluate two agents on the AndroidControl dataset. Predictions are made in normalized
+coordinates $[0,1]^2$, and clicks are judged correct if the predicted point falls within
+Euclidean distance $\tau$ of the ground-truth target. Action type, typed text,
+and scroll direction are checked separately where applicable. Steps with \texttt{wait} or \texttt{open\_app}
+ground-truth actions are excluded from evaluation (373 records), as the models either
+lack temporal context for wait decisions or predict \texttt{click} in place of
+\texttt{open\_app}.
+
+\begin{table}[h]
+    \centering
+    \caption{Hit rate (\%) on AndroidControl. Sample sizes differ between models.}
+    \label{tab:androidcontrol}
+    \begin{tabular}{lcc}
+    \toprule
+    \textbf{Model} & \textbf{Hit Rate (\%)} & \textbf{Samples} \\
+    \midrule
+    AGUVIS-7B  & 75.00 & 2988  \\
+    Holo2-4B   & 58.40 & 5309 \\
+    \bottomrule
+    \end{tabular}
+\end{table}
+As shown in Table~\ref{tab:androidcontrol}, AGUVIS-7B achieves a hit rate of 75.0\%
+compared to 58.4\% for HOLO2-4B at $\tau{=}0.1$. To further examine localization
+precision, Table~\ref{tab:accuracy} reports accuracy across stricter thresholds.
+
+\begin{table}[h]
+\centering
+\caption{Accuracy at varying coordinate thresholds $\delta$.}
+\label{tab:accuracy}
+\begin{tabular}{lcc}
+\toprule
+$\delta$ & HOLO2-4B & AGUVIS-7B \\
+\midrule
+0.10 & 58.4\% & 75.0\% \\
+0.05 & 52.6\% & 72.1\% \\
+0.01 & 37.7\% & 61.9\% \\
+0.00 & 7.4\%  & 21.9\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\subsection{Aguvis + UI-Zoomer Results:} 
+integrating UI-Zoomer achieves a 24.91\% overall hit rate on ScreenSpot-Pro, improving the AGUVIS-7B baseline by +3.84 points. We break down performance into two stages based on voting confidence. In Stage-1, 42.7\% of samples meet the confidence threshold ($c \geq \tau$) and bypass adaptive cropping. For these, the initial prediction hits the target 38.0\% of the time. In Stage-2, the remaining 57.3\% of samples fall below the threshold ($c < \tau$) and trigger adaptive cropping. The crop isolates the target in 74.8\% of these Stage-2 cases, setting an upper bound for recovery. 
+
+Notably, the combined probability of triggering a crop and successfully framing the target ($0.573 \times 0.748 \approx 0.4286$) reveals that in nearly 42.9\% of all test cases, the system visually isolates the target but fails to act on it. This suggests a failure in task comprehension rather than visual grounding. 
+
+However, within this successfully cropped subset, the model correctly re-predicts the target only 18.8\% of the time. This yields a 15.1\% hit rate across all Stage-2 samples.  We hypothesize this may stem from a language mismatch, as ScreenSpot-Pro contains Chinese instructions while AGUVIS is primarily trained on English data. Though unconfirmed in this study, this potential linguistic bottleneck presents a clear direction for future investigation.
+
+\begin{table}[H]
+    \vspace{-1.5em}
+    \centering
+    \caption{Performance decomposition of the UI-Zoomer pipeline on ScreenSpot-Pro. }
+    \label{tab:uizoomer-breakdown}
+    \begin{tabular}{@{}lr@{}}
+        \toprule
+        \textbf{Pipeline Stage} & \\%} \\
+        \midrule
+        \textbf{Stage-1: High-Confidence Short-Circuit} ($c \geq \tau$) & \textbf{42.7} \\
+        \quad Voted point hits target & 38.0 \\
+        \addlinespace
+        \textbf{Stage-2: Adaptive Crop \& Re-Predict} ($c < \tau$) & \textbf{57.3} \\
+        \quad Target contained inside crop (recoverable) & 74.8 \\
+        \quad Target recovered (re-predicted in GT bbox) & 18.8 \\
+        \quad \textit{Final hit rate across Stage-2 samples} & \textit{15.1} \\
+        \midrule
+        \textbf{Overall Pipeline Hit Rate} & \textbf{24.91} \\
+        \bottomrule
+    \end{tabular}
+    \vspace{-1.5em}
+\end{table}
+
 
 \section{Conclusion}
+We present Click2Act, an evaluation framework for GUI grounding, and use it
+to conduct a systematic analysis of four small VLMs (3B--7B) across two benchmarks:
+ScreenSpot-Pro for desktop grounding and AndroidControl for mobile action prediction.
+Across both benchmarks, coordinate precision emerges as the universal bottleneck:
+action type classification is largely solved at this scale, while fine-grained
+localization remains the primary source of failure. UI-Zoomer partially addresses
+this gap as a training-free inference-time augmentation, lifting AGUVIS-7B from
+21.07\% to 24.91\% on ScreenSpot-Pro without any additional training, suggesting
+that adaptive zoom is a promising direction for improving localization in small models.
+Future work includes fine-tuning small models on domain-specific data to close the
+desktop grounding gap, combining grounding agents with parsing-based approaches such
+as OmniParser for richer UI representations, and extending evaluation to multi-step
+task completion metrics beyond per-step accuracy.
 
-
-
-\section*{Acknowledgements}
-
-\section*{Impact Statement}
 
 \bibliography{paper}
 \bibliographystyle{icml2025}
-\cite{aguvis}
-\cite{li2024effects}
-\appendix
-\onecolumn
-\section{Appendix}
 
+% \appendix
+% \onecolumn
+% \section{Appendix}
 
+% \subsection{ScreenSpot Pro Detailed Results}
 
+% \begin{figure*}[h]
+%     \centering
+%     \includegraphics[width=\textwidth]{imgs/screenspot-distribution.pdf}
+%     \caption{ScreenSpot-Pro sample distribution across applications and UI element
+%     types. Text targets outnumber icon targets in most applications.}
+%     \label{fig:screenspot-distribution}
+% \end{figure*}
+
+% \subsection{AGUVIS-7B Detailed Failure Analysis on ScreenSpot-Pro}
+% \label{app:aguvis-screenspotpro}
+
+% AGUVIS-7B reaches an overall hit rate of $21.07\%$ on ScreenSpot-Pro, but this aggregate hides a wide spread across applications, UI element types, and target sizes. Per-application accuracy ranges from $70\%$ on \texttt{eviews} down to $2.5\%$ on \texttt{android\_studio}; we analyze the dominant failure modes along three axes: element type, target size, and click distance.
+
+% \paragraph{Per-element-type accuracy:} Text targets are reached $31.72\%$ of the time, while icon targets are reached only $3.83\%$ of the time --- an $\sim\!\!8\times$ gap. Icons therefore account for a disproportionate share of failures even though they form a minority of samples.
+
+% \paragraph{Target-size sensitivity:} Hit accuracy decays sharply with smaller ground-truth bounding boxes (Figure~\ref{fig:aguvis-hit-vs-bbox}), confirming that small-model coordinate precision is the dominant bottleneck rather than action-type classification.
+
+% \paragraph{Distance-to-target on misses:} On missed samples, the predicted point lies a median of $248$~px from the nearest bounding-box edge (mean $656$~px, 75th percentile $1{,}041$~px), and a median of $8.6\times$ the bounding-box dimension from the target center when normalized. Figure~\ref{fig:aguvis-dist-cdf} shows the CDF: a non-trivial fraction of misses land within a few tens of pixels of the target, suggesting that a fraction of failures could be recovered by a localization-refinement stage --- which directly motivates the UI-Zoomer evaluation.
+
+% \paragraph{Qualitative error taxonomy:} On a random sample of $101$ failures, $38$ were manually labeled with a clear cause: $15$ near-misses (predicted point very close to the bounding box, plausibly recoverable by smart-resize alignment or sub-pixel correction); $6$ instances of the model predicting a previously-completed step instead of the current one (ignoring the screen state); $5$ cases with multiple valid ground-truth targets; and $5$ confusions between visually similar buttons. The remaining failures cluster around partial-instruction parsing (e.g.\ ``click $X$ inside $Y$'' resolved to $X$ alone) and unfamiliar domain-specific icons (e.g.\ DaVinci Resolve).
+
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{imgs/aguvis-screenspot-pro-hit-acc-vs-bbox-area.png}
+%     \caption{AGUVIS-7B hit accuracy vs.\ ground-truth bounding-box area on ScreenSpot-Pro. Accuracy decays as targets shrink, indicating that the failure mode at this scale is coordinate precision rather than semantic recognition.}
+%     \label{fig:aguvis-hit-vs-bbox}
+% \end{figure}
+
+% \begin{figure}[t]
+%     \centering
+%     \includegraphics[width=0.85\textwidth]{imgs/aguvis-dist-to-edge-cdf.png}
+%     \caption{Cumulative distribution of the predicted-point's distance to the nearest ground-truth bounding-box edge on missed samples. A non-trivial fraction of misses are within tens of pixels of the target, motivating localization-refinement strategies such as UI-Zoomer.}
+%     \label{fig:aguvis-dist-cdf}
+% \end{figure}
 
 \end{document}

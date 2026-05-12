@@ -1,0 +1,128 @@
+% AI-GENERATED
+% Model  : Claude Opus 4.7
+% Date   : 2026-05-12
+% Prompt : (1) use real ScreenSpot-Pro accuracies; (2) only one model is a star
+%          (AGUVIS+UI-Zoomer); (3) show AGUVIS-7B → +UI-Zoomer improvement.
+
+% Click2Act teaser — ScreenSpot-Pro hit rate vs. model size (log scale).
+% Frontier values (gray circles): leaderboard-reported.
+% Small models studied here (blue circles): paper Table 2.
+% The only star marks AGUVIS+UI-Zoomer; the orange bracket marks the +3.84 pt
+% lift over the AGUVIS-7B baseline (both measured in this paper, same config).
+
+\definecolor{c2aPrimary}{HTML}{2E86AB}
+\definecolor{c2aSecondary}{HTML}{A23B72}
+\definecolor{c2aTertiary}{HTML}{F18F01}
+\definecolor{c2aNeutral}{HTML}{6C757D}
+\definecolor{c2aSuccess}{HTML}{3BB273}
+\definecolor{c2aWarning}{HTML}{E84855}
+\definecolor{c2aText}{HTML}{212529}
+
+\tikzset{
+  axislbl/.style ={font=\scriptsize\sffamily, text=c2aText},
+  tlabel/.style  ={font=\tiny\sffamily, text=c2aNeutral},
+  modellbl/.style={font=\tiny\sffamily, text=c2aText, inner sep=1pt},
+  gridline/.style={c2aNeutral!25, line width=0.3pt, dashed},
+  callout/.style ={c2aNeutral!60, line width=0.3pt},
+  large/.style    ={circle,
+                    fill=c2aNeutral!50, draw=c2aNeutral,
+                    line width=0.4pt, minimum size=5pt, inner sep=0pt},
+  small/.style    ={circle,
+                    fill=c2aPrimary, draw=c2aPrimary,
+                    line width=0.4pt, minimum size=5pt, inner sep=0pt},
+  highlight/.style={star, star points=5, star point ratio=2.3,
+                    fill=c2aTertiary, draw=c2aTertiary,
+                    line width=0.4pt, minimum size=10pt, inner sep=0pt},
+}
+
+\centering
+\begin{tikzpicture}[x=1cm, y=1cm]
+
+  % --- Plot panel ---
+  \fill[c2aNeutral!5, rounded corners=2pt]
+    (-0.05, -0.05) rectangle (5.55, 4.35);
+
+  \foreach \y in {1, 2, 3, 4} {
+    \draw[gridline] (0, \y) -- (5.5, \y);
+  }
+
+  % Axes
+  \draw[c2aNeutral, line width=0.5pt] (0, 0) -- (5.5, 0);
+  \draw[c2aNeutral, line width=0.5pt] (0, 0) -- (0, 4.3);
+
+  % Y-axis ticks (hit rate %)
+  \foreach \y/\lab in {0/0, 1/20, 2/40, 3/60, 4/80} {
+    \draw[c2aNeutral, line width=0.4pt] (-0.06, \y) -- (0.06, \y);
+    \node[tlabel, anchor=east] at (-0.10, \y) {\lab};
+  }
+
+  % X-axis ticks (params, log10 scale; x = (log10(p) - 0.30) * 2.3)
+  \foreach \x/\lab in {0.41/3B, 1.25/7B, 2.71/30B, 4.76/235B} {
+    \draw[c2aNeutral, line width=0.4pt] (\x, -0.06) -- (\x, 0.06);
+    \node[tlabel, anchor=north] at (\x, -0.10) {\lab};
+  }
+
+  % Axis labels
+  \node[axislbl, rotate=90] at (-0.80, 2.15)
+    {ScreenSpot-Pro Hit Rate (\%)};
+  \node[axislbl] at (2.5, -0.55)
+    {Model size (parameters, log scale)};
+
+  % --- Frontier models (gray, leaderboard) ---
+  % Names only; y-axis shows accuracy. Avoids label collisions at the top.
+  % Holo2-235B-A22B: 78.5
+  \node[large] (holo235) at (4.76, 3.925) {};
+  \node[modellbl, anchor=east] at (holo235.west) {Holo2-235B};
+
+  % Holo2-30B-A3B: 75.2 — label ABOVE point
+  \node[large] (holo30) at (2.71, 3.76) {};
+  \node[modellbl, anchor=south] at (holo30.north) {Holo2-30B};
+
+  % UI-Venus-1.5-30B-A3B: 69.6 — label BELOW point
+  \node[large] (uv30) at (2.71, 3.48) {};
+  \node[modellbl, anchor=north] at (uv30.south) {UI-Venus-1.5-30B};
+
+  % --- Paper's small models (blue circles, Table 2) ---
+  % Holo2-4B: 40.54
+  \node[small] (holo4) at (0.70, 2.027) {};
+  \node[modellbl, anchor=west] at (0.92, 2.18) {Holo2-4B (40.5)};
+  \draw[callout] (holo4.north east) -- (0.90, 2.16);
+
+  % UI-AGILE-3B: 12.71
+  \node[small] (uiagile) at (0.41, 0.635) {};
+  \node[modellbl, anchor=west] at (0.62, 0.42) {UI-AGILE-3B (12.7)};
+  \draw[callout] (uiagile.south) -- (0.67, 0.44);
+
+  % AGUVIS-7B: 21.07
+  \node[small] (aguvis) at (1.25, 1.054) {};
+  \node[modellbl, anchor=west] at (1.70, 0.82) {AGUVIS-7B (21.1)};
+  \draw[callout] (aguvis.south east) -- (1.68, 0.84);
+
+  % --- Highlighted: AGUVIS + UI-Zoomer (the one star) ---
+  % 24.91
+  \node[highlight] (aguz) at (1.25, 1.246) {};
+  \node[modellbl, anchor=west, text=c2aTertiary] at (1.70, 1.55)
+    {\textbf{AGUVIS+UI-Zoomer (24.9)}};
+  \draw[callout, c2aTertiary!60] (aguz.east) -- (1.68, 1.53);
+
+  % --- AGUVIS-7B → +UI-Zoomer improvement bracket ---
+  \draw[c2aTertiary, line width=0.5pt]
+    (1.42, 1.054) -- (1.50, 1.054)
+    (1.50, 1.054) -- (1.50, 1.246)
+    (1.50, 1.246) -- (1.42, 1.246);
+  \node[font=\tiny\sffamily\bfseries, text=c2aTertiary, anchor=west]
+    at (1.52, 1.150) {+3.84};
+
+  % --- Legend ---
+  \matrix at (2.75, -1.00) [
+    anchor=north,
+    column sep=3pt, row sep=2pt,
+    matrix of nodes,
+    nodes={font=\tiny\sffamily, text=c2aText, inner sep=1pt},
+  ] {
+    \tikz\node[large]{};     & frontier (reported)   &[6pt]
+    \tikz\node[small]{};     & this paper (measured) &[6pt]
+    \tikz\node[highlight]{}; & + UI-Zoomer \\
+  };
+
+\end{tikzpicture}
