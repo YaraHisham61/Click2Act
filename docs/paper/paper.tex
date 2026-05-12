@@ -126,14 +126,42 @@ Holo2-235B-A22B~\cite{holo2}, and where exactly they fail, remains an open quest
 
 \textbf{Holo2-4B}~\cite{holo2} is a fully open-source autonomous GUI agent built on Qwen3-VL that supports all platforms. It is trained in two stages: (1) a large-scale supervised fine-tuning (SFT) stage on screen localization and element grounding, and (2) an online reinforcement learning stage using Group Relative Policy Optimization (GRPO) to refine its multi-step reasoning and navigation policies.
 
-\textbf{UI-Agile-7B}
+\textbf{UI-Agile-3B}~\cite{uiagile} is a fully open-source GUI grounding agent built on Qwen2.5-VL-3B. It is aiming at improving both the reinforcement fine tuning and the inference stages of GUI agents. their contibution are in three main points:firstly, UI-Agile applies simple thinking strategy that encourages thoughts within an "ideal range" of length, secondly, UI-Agile provides a continuous reward function that treats a click on the very edge of a button the same as a click in the center, thirdly, UI-Agile applies a cropping-based resampling strategy that dynamically adjusts the difficulty by cropping (zooming in) on the original screenshot.
 
-\textbf{AGUVIS+UI-Zoomer}
+\textbf{AGUVIS + UI-Zoomer} we augments AGUVIS-7B with UI-Zoomer~\cite{uizoomer}, an inference-time post-processing technique that requires no retraining. When the model's localization confidence is low, UI-Zoomer crops and zooms into predicted region, adding an extra forward pass only when needed. We pair UI-Zoomer to test whether inference-time augmentation can close the accuracy gap without increasing model size.
 
 \subsection{Expirmented Benchmarks}
+
+\textbf{ScreenSpot-Pro}~\cite{li2025screenspotpro} is a static GUI grounding benchmark
+targeting high-resolution desktop screenshots, with 1{,}580 samples distributed across
+26 professional applications on Linux, macOS, and Windows. State-of-the-art models have not yet saturated its leaderboard, making it a strong discriminator between models. Each sample pairs a screenshot with
+a low-level instruction and a ground-truth bounding box. Figure~\ref{fig:screenspot-distribution} shows the distribution of samples across
+applications and UI element types. Text targets outnumber icon targets in most
+applications, with the gap being especially large in domain-specific tools such as
+\texttt{matlab}, \texttt{solidworks} and \texttt{word}.
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\textwidth]{imgs/screenspot-distribution.pdf}
+    \caption{ScreenSpot-Pro sample distribution across applications and UI element
+    types. Text targets outnumber icon targets in most applications.}
+    \label{fig:screenspot-distribution}
+\end{figure*}
+
+\textbf{Android Control}~\cite{androidcontrol} is a mobile GUI dataset. We evaluate on
+a subset of episodes from its test set, where each episode consists of a high-level
+goal and multiple steps. Each step pairs a screenshot and a low-level instruction with
+a ground-truth action (action type, coordinate, text, and scroll direction).
+
+
 \subsection{Evaluation Metrics}
 
+\textbf{Hit Rate} (ScreenSpot-Pro) measures the fraction of samples for which the predicted point falls within the ground-truth bounding box.
 
+\textbf{Step Accuracy} (Android Control) measures the fraction of steps for which the predicted action matches the ground truth on all applicable components. Coordinates are normalized to $[0, 1]$ by the screen dimensions, so a predicted coordinate $(x', y')$ is considered correct if $\|{(x', y') - (x^*, y^*)}\|_2 \leq \tau$,
+where $(x^*, y^*)$ is the ground-truth coordinate. We report results at $\tau \in \{0, 0.01, 0.05, 0.1\}$ to characterize each model's coordinate precision across a range of tolerance levels.
+
+\textbf{Component-level accuracy} decomposes step accuracy into component scores (action type, coordinate, text, direction), enabling identification of which prediction components are responsible for failures.
 
 \section{Experiments}
 

@@ -1,0 +1,43 @@
+\begin{thebibliography}{7}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Company(2025)]{holo2}
+Company, H.
+\newblock Holo2 - open foundation models for navigation and computer use agents, 2025.
+\newblock URL \url{https://huggingface.co/collections/Hcompany/holo2}.
+
+\bibitem[Li et~al.(2025)Li, Ziyang, Lin, Luo, Tian, Ma, Huang, and Chua]{li2025screenspotpro}
+Li, K., Ziyang, M., Lin, H., Luo, Z., Tian, Y., Ma, J., Huang, Z., and Chua, T.-S.
+\newblock Screenspot-pro: {GUI} grounding for professional high-resolution computer use.
+\newblock In \emph{Workshop on Reasoning and Planning for Large Language Models}, 2025.
+\newblock URL \url{https://openreview.net/forum?id=XaKNDIAHas}.
+
+\bibitem[Li et~al.(2024)Li, Bishop, Li, Rawles, Campbell-Ajala, Tyamagundlu, and Riva]{androidcontrol}
+Li, W., Bishop, W., Li, A., Rawles, C., Campbell-Ajala, F., Tyamagundlu, D., and Riva, O.
+\newblock On the effects of data scale on computer control agents.
+\newblock \emph{arXiv preprint arXiv:2406.03679}, 2024.
+
+\bibitem[Lian et~al.(2025)Lian, Wu, Ma, Song, Chen, Zheng, and Li]{uiagile}
+Lian, S., Wu, Y., Ma, J., Song, Z., Chen, B., Zheng, X., and Li, H.
+\newblock Ui-agile: Advancing gui agents with effective reinforcement learning and precise inference-time grounding, 2025.
+\newblock URL \url{https://arxiv.org/abs/2507.22025}.
+
+\bibitem[Tang et~al.(2026)Tang, Chen, Lu, Chen, Nong, Jiang, Xu, Lu, Xiao, Zhuang, and Shen]{uizoomer}
+Tang, F., Chen, B., Lu, Z., Chen, T., Nong, S., Jiang, T., Xu, W., Lu, W., Xiao, J., Zhuang, Y., and Shen, Y.
+\newblock Ui-zoomer: Uncertainty-driven adaptive zoom-in for gui grounding, 2026.
+\newblock URL \url{https://arxiv.org/abs/2604.14113}.
+
+\bibitem[Venus-Team et~al.(2026)Venus-Team, Gao, Gu, Liu, Qiu, Shen, Wen, Xia, Xu, Zeng, Zhou, Zhou, Chen, Dai, Dou, Gong, Guo, Guo, Li, Li, Lin, Zhou, Zhu, Chen, Guo, Meng, and Wang]{uivenus15}
+Venus-Team, Gao, C., Gu, Z., Liu, Y., Qiu, X., Shen, S., Wen, Y., Xia, T., Xu, Z., Zeng, Z., Zhou, B., Zhou, X., Chen, W., Dai, S., Dou, J., Gong, Y., Guo, Y., Guo, Z., Li, F., Li, Q., Lin, J., Zhou, Y., Zhu, L., Chen, L., Guo, Z., Meng, C., and Wang, W.
+\newblock Ui-venus-1.5 technical report, 2026.
+\newblock URL \url{https://arxiv.org/abs/2602.09082}.
+
+\bibitem[Xu et~al.(2024)Xu, Wang, Wang, Lu, Xie, Saha, Sahoo, Yu, and Xiong]{aguvis}
+Xu, Y., Wang, Z., Wang, J., Lu, D., Xie, T., Saha, A., Sahoo, D., Yu, T., and Xiong, C.
+\newblock Aguvis: Unified pure vision agents for autonomous gui interaction, 2024.
+
+\end{thebibliography}
